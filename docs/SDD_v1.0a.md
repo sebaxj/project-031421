@@ -98,7 +98,8 @@ the proposed C++/ChucK software.
 #### ii. SYSTEM DESIGN
 
 ```
-[ECG pads, temperature probe, blood pressure cuff, galvanic skin response, and pulse oximetry LED]
+[ECG pads, temperature probe, blood pressure cuff,
+galvanic skin response, and pulse oximetry LED]
 |
 |
 |
