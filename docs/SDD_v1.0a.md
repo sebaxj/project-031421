@@ -37,6 +37,8 @@ The goals for this project are as follows:
   - Livestream implements a direct pipeline from hardware sensors to biosignal
     aquisition, digital signal processing (DSP) algorithms, to sound synthesis in
     an instantaneous format.
+  - Ultimately, a audiovisual exhibit to **artfully** represent human vitals in
+    the domain of music.
 
 ## III. PROPOSED SOLUTION
 
