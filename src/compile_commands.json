@@ -1147,50 +1147,12 @@
       "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
       "-c",
       "-o",
-      "host/chuck_main.o",
-      "host/chuck_main.cpp"
+      "host/main.o",
+      "host/main.cpp"
     ],
     "directory": "/Users/sebastianjames/src/project-031421/src",
-    "file": "/Users/sebastianjames/src/project-031421/src/host/chuck_main.cpp",
-    "output": "/Users/sebastianjames/src/project-031421/src/host/chuck_main.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang++",
-      "-I.",
-      "-Icore",
-      "-Icore/lo",
-      "-O3",
-      "-D__MACOSX_CORE__",
-      "-isysroot",
-      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
-      "-c",
-      "-o",
-      "host/chuck_audio.o",
-      "host/chuck_audio.cpp"
-    ],
-    "directory": "/Users/sebastianjames/src/project-031421/src",
-    "file": "/Users/sebastianjames/src/project-031421/src/host/chuck_audio.cpp",
-    "output": "/Users/sebastianjames/src/project-031421/src/host/chuck_audio.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/clang++",
-      "-I.",
-      "-Icore",
-      "-Icore/lo",
-      "-O3",
-      "-D__MACOSX_CORE__",
-      "-isysroot",
-      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
-      "-c",
-      "-o",
-      "host/chuck_console.o",
-      "host/chuck_console.cpp"
-    ],
-    "directory": "/Users/sebastianjames/src/project-031421/src",
-    "file": "/Users/sebastianjames/src/project-031421/src/host/chuck_console.cpp",
-    "output": "/Users/sebastianjames/src/project-031421/src/host/chuck_console.o"
+    "file": "/Users/sebastianjames/src/project-031421/src/host/main.cpp",
+    "output": "/Users/sebastianjames/src/project-031421/src/host/main.o"
   },
   {
     "arguments": [
