@@ -4,3 +4,5 @@ jythonMusic/*
 src/.ccls
 src/.ccls-cache/*
 src/compile_commands.json
+.ccls-cache/*
+.DS_Store
