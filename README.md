@@ -2,4 +2,4 @@
 
 ## TODO:
 
-    - running ```./main``` after compilation returns error: ```(CoreAudio) device (0) does not support requested channel count...```
+-   `/chuck-main/design/chuck-lib` contains information about using ChucK as a library.

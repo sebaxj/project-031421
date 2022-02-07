@@ -1,0 +1,30 @@
+**-------------README-------------**
+Author: Kunwoo Kim
+  Date: 10.15.2017
+ Class: Music 256A @ Stanford University
+    HW: Assignment 3
+
+*--------INSTALLATION (LetsSine)--------*
+1. Download the zip file.
+2. Unzip the zip file.
+3. Go to Terminal in MacOSX, and open the folder, “SoundBulb”.
+4. Type "make osx” to compile the file.
+5. Type “./SoundBulb” to open the file.
+6. By Default, the program takes microphone input as realtime.
+7. If you want to view a narrative, type ’n’ once.
+8. To exit, press ‘q’
+
+
+*--------COMMENTS--------*
+- I am getting used to programming in C++.
+- I helped a lot of colleagues for this assignment!
+- The basic format got finished very early.
+
+
+*--------MY COLLABORATORS-------*
+Deepak Chandran,
+Yuval Addler
+Jack Atherton
+
+
+
