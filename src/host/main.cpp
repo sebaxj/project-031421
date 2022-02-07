@@ -26,7 +26,7 @@ long g_bufferSize;
 
 // global variables
 ChucK *the_chuck = NULL;
-string s = "hi";
+
 // Chuck sample rate
 const t_CKFLOAT CHUCK_MY_SRATE = 44100;
 // Chuck number of channels
