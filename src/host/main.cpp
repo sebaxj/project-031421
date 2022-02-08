@@ -164,7 +164,7 @@ using namespace std;
 //-----------------------------------------------------------------------------
 
 // number of channels
-#define CHUCK_MY_CHANNELS 1
+#define CHUCK_MY_CHANNELS 2
 // for convenience
 #define MY_PIE 3.14159265358979
 // our datetype
@@ -188,7 +188,7 @@ ChucK *the_chuck = NULL;
 //-----------------------------------------------------------------------------
 int callme(void *outputBuffer, void *inputBuffer, unsigned int numFrames,
            double streamTime, RtAudioStreamStatus status, void *data) {
-  cout << "TEST 4" << endl;
+  // cerr << "TEST 4" << endl;
   // cast!
   SAMPLE *input = (SAMPLE *)inputBuffer;
   SAMPLE *output = (SAMPLE *)outputBuffer;
@@ -201,7 +201,7 @@ int callme(void *outputBuffer, void *inputBuffer, unsigned int numFrames,
   //    for (int j = 0; j < MY_CHANNELS_OUT; j++) {
   //     output[i * MY_CHANNELS_OUT + j] = 0;
   //   }
-  cout << "END OF CALLBACK" << endl;
+  // cout << "END OF CALLBACK" << endl;
 
   return 0;
 }
@@ -216,7 +216,7 @@ int main(int argc, char **argv) {
   // variables
   unsigned int bufferBytes = 0;
   // frame size
-  unsigned int bufferFrames = 1024;
+  unsigned int bufferFrames = 4096;
 
   // check for audio devices
   if (audio.getDeviceCount() < 1) {
@@ -264,10 +264,13 @@ int main(int argc, char **argv) {
                       CHUCK_MY_SRATE); // set sample rate
   the_chuck->setParam(CHUCK_PARAM_OUTPUT_CHANNELS,
                       CHUCK_MY_CHANNELS); // set number of channels in and out
-  the_chuck->setParam(CHUCK_PARAM_INPUT_CHANNELS, CHUCK_MY_CHANNELS);
+  the_chuck->setParam(CHUCK_PARAM_INPUT_CHANNELS, MY_CHANNELS_IN);
+  // the_chuck->setLogLevel( CK_LOG_INFO );
   the_chuck->init();
   the_chuck->compileFile("/Users/sebastianjames/src/project-031421/src/test.ck",
                          "");
+
+  the_chuck->start();
   cout << "TEST 3" << endl;
   // TODO: set sample rate and number of in/out channels on our chuck
 
@@ -280,13 +283,21 @@ int main(int argc, char **argv) {
     // start stream
     audio.startStream();
 
-    // stop the stream.
-    audio.stopStream();
   } catch (RtError &e) {
     // print error message
     cout << e.getMessage() << endl;
     goto cleanup;
   }
+
+  while( the_chuck->vm_running() )
+  {
+    usleep( 10000 );
+  }
+
+  // stop the stream.
+  audio.stopStream();
+
+  cerr << "cleaning up..." << endl;
 
 cleanup:
   // close if open
