@@ -12,6 +12,7 @@
 #include <iostream>
 #include <math.h>
 #include <stdlib.h>
+#include <unistd.h>
 using namespace std;
 
 //-----------------------------------------------------------------------------
@@ -116,7 +117,6 @@ int main(int argc, char **argv) {
     cout << e.getMessage() << endl;
     exit(1);
   }
-  cout << "TEST 2" << endl;
 
   // compute
   bufferBytes =
@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
                       MY_CHANNELS_IN); // set number of channels in
   the_chuck->setLogLevel(CK_LOG_INFO); // let chuck print more detailed log info
   the_chuck->init();                   // initialize chuck
-  the_chuck->compileFile("/Users/sebastianjames/src/project-031421/src/test.ck",
+  the_chuck->compileFile("test.ck",
                          "");
   // start chuck
   the_chuck->start();
