@@ -1,18 +1,20 @@
 //-----------------------------------------------------------------------------
-// name: 4Seasons-Elena.cpp
-// desc: 256a first milestone of a visualizer.
+// name: Soundbulb.cpp
+// desc: Realtime sound visualizer with optional narrative
 //
-// author: Elena Georgieva
-// date: fall 2018
-// thanks to Ge Wang, Jack Atherton, Kunwoo Kim.
+// author: Kunwoo Kim (kunwoo@ccrma.stanford.edu)
+//   date: fall 2017
+//    for: Music 256A Assignment 3 - Sound Peeking
+//  based: VisualSine by Ge Wang
+//   uses: RtAudio by Gary Scavone
 //-----------------------------------------------------------------------------
-
-
 #include "RtAudio/RtAudio.h"
 #include "chuck.h"
 #include <math.h>
 #include <stdlib.h>
 #include <iostream>
+#include <sstream>
+#include <stdio.h>
 using namespace std;
 
 #ifdef __MACOSX_CORE__
@@ -25,13 +27,9 @@ using namespace std;
 #include <GL/glut.h>
 #endif
 
-// complex type
-typedef struct { float re ; float im ; } complex;
+//FFT
+#include "chuck_fft.h"
 
-// complex absolute value
-#define cmp_abs(x) ( sqrt( (x).re * (x).re + (x).im * (x).im ) )
-
-#include "../core/util_xforms.h"
 
 
 //-----------------------------------------------------------------------------
@@ -42,7 +40,6 @@ void idleFunc();
 void displayFunc();
 void reshapeFunc( GLsizei width, GLsizei height );
 void keyboardFunc( unsigned char, int, int );
-void mouseFunc( int button, int state, int x, int y );
 double compute_log_spacing( int fft_size, double factor );
 
 // our datetype
@@ -52,9 +49,10 @@ double compute_log_spacing( int fft_size, double factor );
 // sample rate
 #define MY_SRATE 44100
 // number of channels
-#define MY_CHANNELS 2
+#define MY_CHANNELS 1
 // for convenience
 #define MY_PIE 3.14159265358979
+
 #define SAMPLE                  float
 #define RTAUDIO_FORMAT          RTAUDIO_FLOAT32
 #define SND_BUFFER_SIZE         1024
@@ -70,19 +68,10 @@ const long MY_FRAMESIZE = 1024;
 // Chuck sample rate
 const t_CKFLOAT CHUCK_MY_SRATE = 44100;
 // Chuck number of channels
-const t_CKINT CHUCK_MY_CHANNELS = 2;
+const t_CKINT CHUCK_MY_CHANNELS = 1;
 
 // global frequency (used for Chuck Sine Wave Testing)
 float freq = 440;
-int SEASON = 0;
-
-//from soudnbulb example
-//////////////////////////////
-//Making ellipse
-float cos_skew=1.0f;
-float sin_skew=1.0f;
-float fader = 1.0f;
-float lightbulb_constant = 47.0f;
 
 // global audio buffer
 SAMPLE g_fft_buffer[SND_FFT_SIZE];
@@ -156,6 +145,9 @@ GLfloat g_wf_delay_ratio = 1.0f / 3.0f;
 GLuint g_wf_delay = (GLuint)(g_depth * g_wf_delay_ratio + .5f);
 GLuint g_wf_index = 0;
 
+// keeps track of maximum amplitude
+float max_amp = 0;
+
 // width and height
 long g_width = 1024;
 long g_height = 720;
@@ -166,55 +158,95 @@ long g_bufferSize;
 // global variables
 bool g_draw_dB = false;
 ChucK * the_chuck = NULL;
+int break_counter = 0;
+bool break_status = false;
+float lightbulb_constant = 47.0f;
+
+ //Making ellipse
+float cos_skew=1.0f;
+float sin_skew=1.0f;
+float fader = 1.0f;
+
+//Input
+float max_radius = 6.0;
+float time_gain = 2.0f;
+
+// boolean to keep track of narrative key
+GLboolean narrativekey = FALSE;
 
 // stringstream for compiling chuck code
 stringstream ss;
+
+
 //-----------------------------------------------------------------------------
 // name: help()
-// desc: instructions printed in terminal
+// desc: ...
 //-----------------------------------------------------------------------------
 void help()
 {
     fprintf( stderr, "----------------------------------------------------\n" );
-    fprintf( stderr, "4Seasons\n");
-    fprintf( stderr, "Use 'w' to see Winter\n");
-    fprintf( stderr, "Use 's' to see Spring\n");
-    fprintf( stderr, "Use 'u' to see Summer\n");
-    fprintf( stderr, "Use 'f' to see Fall\n\n");
-    fprintf( stderr, "'q' to quit. Enjoy!!\n");
+    fprintf( stderr, "SoundBulb (1.0)\n" );
+    fprintf( stderr, "Kunwoo Kim\n" );
+    fprintf( stderr, "http://www.kunwookimm.com/\n" );
+    fprintf( stderr, "----------------------------------------------------\n" );
+    fprintf( stderr, "'q' - quit the program\n" );
+    fprintf( stderr, "'n' - play narrative\n" );
+    fprintf( stderr, "\n" );
 }
 
 
 //-----------------------------------------------------------------------------
 // name: callme()
 // desc: audio callback
-//copies left channel into gbuffer, modify to get chuck sound to work
 //-----------------------------------------------------------------------------
 int callme( void * outputBuffer, void * inputBuffer, unsigned int numFrames,
-            double streamTime, RtAudioStreamStatus status, void * data )
+    double streamTime, RtAudioStreamStatus status, void * data )
 {
     // cast!
     SAMPLE * input = (SAMPLE *)inputBuffer;
     SAMPLE * output = (SAMPLE *)outputBuffer;
     
-    // compute chuck! Audio callback
-    the_chuck -> run(input, output, numFrames);
+    // make output of chuck the buffer
+    the_chuck -> run(input, output, MY_FRAMESIZE);
 
-    
     // fill
     for( int i = 0; i < numFrames; i++ )
     {
-        // copy the input to visualize only the left-most channel
-        //g_buffer[i] = input[i*MY_CHANNELS];
-        
-        // also copy in the output from chuck to our visualizer
-        g_buffer[i] = output[i*MY_CHANNELS];
+        // assume mono
+        g_buffer[i] = output[i];
+        // zero output
+        input[i] = 0;
+    }
 
-        // mute output -- TODO will need to disable this once ChucK produces output, in order for you to hear it!
-        //for( int j = 0; j < MY_CHANNELS; j++ ) { output[i*MY_CHANNELS + j] = 0; }
+    return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// name: initChucK()
+// desc: initialize ChucK
+//-----------------------------------------------------------------------------
+bool initChucK()
+{
+    // Instantiate ChucK
+    the_chuck = new ChucK;
+    
+    // Set parameters of ChucK
+    if (narrativekey == TRUE)
+    {
+        char myDirectory[512];
+        getcwd( myDirectory, 512);
+        the_chuck->setParam( CHUCK_PARAM_WORKING_DIRECTORY, myDirectory );
     }
     
-    return 0;
+    the_chuck->setParam(CHUCK_PARAM_SAMPLE_RATE, CHUCK_MY_SRATE);
+    the_chuck->setParam(CHUCK_PARAM_OUTPUT_CHANNELS, CHUCK_MY_CHANNELS);
+    the_chuck->setParam(CHUCK_PARAM_INPUT_CHANNELS, CHUCK_MY_CHANNELS);
+    
+    // Initialize ChucK
+    the_chuck->init();
+
+    return true;
 }
 
 
@@ -224,10 +256,20 @@ int callme( void * outputBuffer, void * inputBuffer, unsigned int numFrames,
 //-----------------------------------------------------------------------------
 int main( int argc, char ** argv )
 {
-    //print usage
+
+    // print usage
     help();
+
+    //--------VISUAL PREPARATION--------------------
+    // initialize GLUT
+    glutInit( &argc, argv );
+    // init gfx
+    initGfx();
+    //------------------**---------------------
     
-    // AUDIO AND VIDEO PREPARATION
+
+
+    //----------AUDIO PREPARATION-------------------
     // instantiate RtAudio object
     RtAudio audio;
     // variables
@@ -242,14 +284,32 @@ int main( int argc, char ** argv )
         cout << "no audio devices found!" << endl;
         exit( 1 );
     }
-    
-    // initialize GLUT
-    glutInit( &argc, argv );
-    // init gfx
-    initGfx();
-    
-    
-    // SET AUDIO PARAMS
+    //------------------**---------------------
+
+
+    //---INITIALIZING CHUCK && COMPILE CHUCK CODE-------
+
+    // NOTE: init ChucK (see function above)
+    if( !initChucK() )
+        exit( 1 );
+
+    // make Chuck take input
+    //declare stringstream for chuck compiling
+    //ss << "adc => dac; while(true) 1::second => now;";
+    //the_chuck->compileCode(ss.str(), "");
+
+    if (narrativekey == FALSE)
+        {
+            // make Chuck take input
+            //declare stringstream for chuck compiling
+            ss << "adc => Gain gadc => dac; 0.5 => gadc.gain; external Event myEvent; myEvent => now;";
+            the_chuck->compileCode(ss.str(), "");
+        }
+
+    //------------------**---------------------
+
+
+    //--------SETTING AUDIO PARAMETERS---------------
     // let RtAudio print messages to stderr.
     audio.showWarnings( true );
     
@@ -264,7 +324,10 @@ int main( int argc, char ** argv )
     
     // create stream options
     RtAudio::StreamOptions options;
-    
+    //------------------**---------------------
+
+
+    //---------OPEN STREAM & CALL AUDIO CALLBACK------
     // go for it
     try {
         // open a stream
@@ -276,29 +339,20 @@ int main( int argc, char ** argv )
         cout << e.getMessage() << endl;
         exit( 1 );
     }
-    
-    // SET BUFFER
+    //------------------**---------------------
+
+
+    //-----------SET BUFFER------------
     // compute
     bufferBytes = bufferFrames * MY_CHANNELS * sizeof(SAMPLE);
     // allocate global buffer
     g_bufferSize = bufferFrames;
     g_buffer = new SAMPLE[g_bufferSize];
     memset( g_buffer, 0, sizeof(SAMPLE)*g_bufferSize );
-    
-    
-    /// INITIALIZE CHUCK AND COMPILE CHUCK CODE HERE
-    // set up chuck
-    the_chuck = new ChucK();
-    the_chuck->setParam(CHUCK_PARAM_SAMPLE_RATE, CHUCK_MY_SRATE);
-    the_chuck->setParam(CHUCK_PARAM_OUTPUT_CHANNELS, CHUCK_MY_CHANNELS);
-    the_chuck->setParam(CHUCK_PARAM_INPUT_CHANNELS, CHUCK_MY_CHANNELS);
-    the_chuck->init();
-    //ss << "adc => dac; while(true) 1::second => now;";
-    //the_chuck->compileCode(ss.str(), "");
-    the_chuck->compileFile("narrative.ck","");
-    
-    
-    //START STREAMING
+    //------------------**---------------------
+
+
+    //-----------START STREAMING--------------
     // go for it
     try {
         // start stream
@@ -316,8 +370,9 @@ int main( int argc, char ** argv )
         cout << e.getMessage() << endl;
         goto cleanup;
     }
-    
-cleanup:
+    //------------------**------------------------
+
+    cleanup:
     // close if open
     if( audio.isStreamOpen() )
         audio.closeStream();
@@ -327,12 +382,15 @@ cleanup:
 }
 
 
+
+
 //-----------------------------------------------------------------------------
 // Name: reshapeFunc( )
 // Desc: called when window size changes
 //-----------------------------------------------------------------------------
 void initGfx()
 {
+    //------INITIALIZE & CREATE WINDOW----------------
     // double buffer, use rgb color, enable depth buffer
     glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH );
     // initialize the window size
@@ -340,13 +398,13 @@ void initGfx()
     // set the window postion
     glutInitWindowPosition( 100, 100 );
     // create the window
-    glutCreateWindow( "4Seasons-Elena" );
-    
-    // Taken from SoundBulb Example ///////////////
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glutCreateWindow( "SoundBulb" );
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
     glEnable( GL_BLEND ); glClearColor(0.0,0.0,0.0,0.0);
+    //------------------**----------------------------
     
-    
+
     //------CALL FUNCTIONS TO PREP FOR CHANGES-----------
     // set the idle function - called when idle
     glutIdleFunc( idleFunc );
@@ -356,8 +414,9 @@ void initGfx()
     glutReshapeFunc( reshapeFunc );
     // set the keyboard function - called on keyboard events
     glutKeyboardFunc( keyboardFunc );
-    // set the mouse function - called on mouse stuff
-    glutMouseFunc( mouseFunc );
+    //------------------**-----------------------
+    
+    
     
     // set clear color
     glClearColor( 0, 0, 0, 1 );
@@ -365,11 +424,11 @@ void initGfx()
     glEnable( GL_COLOR_MATERIAL );
     // enable depth test
     glEnable( GL_DEPTH_TEST );
-    
-    // From SoundBulb Example///////////////////
+
+
     // initialize
     g_waveforms = new SAMPLE *[g_wf_delay];
-    
+
     for( int i = 0; i < g_wf_delay; i++ )
     {
         // allocate memory (stereo)
@@ -377,10 +436,10 @@ void initGfx()
         // zero it
         memset( g_waveforms[i], 0, g_buffer_size * 2 * sizeof(SAMPLE) );
     }
-    
+
     // initialize
     g_spectrums = new Pt2D *[g_depth];
-    
+
     for( int i = 0; i < g_depth; i++ )
     {
         g_spectrums[i] = new Pt2D[SND_FFT_SIZE];
@@ -388,10 +447,13 @@ void initGfx()
     }
     g_draw = new GLboolean[g_depth];
     memset( g_draw, 0, sizeof(GLboolean)*g_depth );
-    
+
     // compute log spacing
     g_log_space = compute_log_spacing( g_fft_size / 2, g_log_factor );
+
 }
+
+
 
 
 //-----------------------------------------------------------------------------
@@ -415,6 +477,7 @@ void reshapeFunc( GLsizei w, GLsizei h )
     // load the identity matrix
     glLoadIdentity( );
     // position the view point
+    //gluLookAt( 0.0f, 0.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f );
     gluLookAt( 0.0f, 0.0f, 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f );
 }
 
@@ -429,33 +492,36 @@ void keyboardFunc( unsigned char key, int x, int y )
 {
     switch( key )
     {
-        case 'w': //What season is it? 'w' for winter
-            SEASON = 0;
-            break;
-        case 's': //'s' for Spring
-            SEASON = 1;
-            break;
-        case 'u': //'u' for Summer
-            SEASON = 2;
-            break;
-        case 'f': //'f' for Fall
-            SEASON = 3;
-            break;
-        case 'Q':
-        case 'q': //'q' to quit
-            exit(1);
-            break;
-            
-        case 'd':
-            g_draw_dB = !g_draw_dB;
-            break;
+        case 'q':
+        exit(1);
+        break;
+
+        // key to play the narrative
+        case 'n':    
+        if (narrativekey == TRUE)
+        {
+            // make Chuck take input
+            //declare stringstream for chuck compiling
+            ss << "adc => Gain gadc => dac; 0.5 => gadc.gain; external Event myEvent; myEvent => now;";
+            the_chuck->compileCode(ss.str(), "");
+            the_chuck->compileFile("","");
+            narrativekey = FALSE;
+        }
+        else 
+        {
+            the_chuck -> broadcastExternalEvent("myEvent");
+            the_chuck->compileFile("Chuck_File", "");
+            narrativekey = TRUE;
+        }
+        break;
     }
     
     glutPostRedisplay( );
 }
 
+
 //-----------------------------------------------------------------------------
-// Name: idleFunc( ) Taken form SoundBulb Example
+// Name: idleFunc( )
 // Desc: callback from GLUT
 //-----------------------------------------------------------------------------
 void idleFunc( )
@@ -466,111 +532,60 @@ void idleFunc( )
 
 
 //-----------------------------------------------------------------------------
-// Name: map_log_spacing( ) Taken from SoundBulb Example
+// Name: map_log_spacing( )
 // Desc: ...
 //-----------------------------------------------------------------------------
 inline double map_log_spacing( double ratio, double power )
 {
     // compute location
-    return ::pow(ratio, power) * g_fft_size/g_freq_view;
+    return ::pow(ratio, power) * g_fft_size/g_freq_view; 
 }
 
 
 
 //-----------------------------------------------------------------------------
-// Name: compute_log_spacing( ) Taken from SoundBulb Example
+// Name: compute_log_spacing( )
 // Desc: ...
 //-----------------------------------------------------------------------------
 double compute_log_spacing( int fft_size, double power )
 {
     int maxbin = g_fft_size; // for future in case we want to draw smaller range
     int minbin = 0; // what about adding this one?
-    
+
     for(int i = 0; i < fft_size; i++)
     {
         // compute location
-        g_log_positions[i] = map_log_spacing( (double)i/fft_size, power );
+        g_log_positions[i] = map_log_spacing( (double)i/fft_size, power ); 
         // normalize, 1 if maxbin == fft_size
         g_log_positions[i] /= pow((double)maxbin/fft_size, power);
     }
-    
+
     return 1/::log(fft_size);
 }
 
-// function that takes wavelength input and sets r,g,b colors WINTER TONES
-void spectral_color_winter(double l) // RGB <- lambda l = < 380,780 > [nm]
+// function that takes wavelength input and sets r,g,b colors
+void spectral_color(double l) // RGB <- lambda l = < 380,780 > [nm]
 {
-    if (l<400.0){ r=.839; g=.999; b=.984;}
-    else if (l<480){ r=.701; g=.890; b=.956;}
-    else if (l<560){ r= .705; g=.705; b=.999;}//lav
-    else if (l<630){ r= .168; g=.196; b=.560;}
-    else  {r=.137; g=.027; b=.270;} //dark
-}
-
-// function that takes wavelength input and sets r,g,b colors SPRING TONES
-void spectral_color_spring(double l) // RGB <- lambda l = < 380,780 > [nm]
-{
-    if (l<380.0){ r=.964; g=.725; b=.678;}
-    else if (l<460){ r=.933; g=.435; b=.407;}
-    else if (l<520){ r=.964; g=.560; b=.235;}
-    else if (l<580){ r= .776; g=.843; b=.725;} //mint
-    else  {r=.368; g=.552; b=.352;} //dk grn
-}
-
-// function that takes wavelength input and sets r,g,b colors SUMMER TONES
-void spectral_color_summer(double l) // RGB <- lambda l = < 380,780 > [nm]
-{
-    if (l<400.0){ r= .999; g=.349; b=.560;}
-    else if (l<480){ r=.992; g=.541; b=.368;}
-    else if (l<560){ r=.878; g=.890; b=.0001;}
-    else if (l<630){ r=.003; g=.866; b=.866;}
-    else  {r=.0001; g=.749; b=.352;}
+         if (l<380.0) r=     0.00;
+    else if (l<400.0) r=0.05-0.05*sin(MY_PIE*(l-366.0)/ 33.0);
+    else if (l<435.0) r=     0.31*sin(MY_PIE*(l-395.0)/ 81.0);
+    else if (l<460.0) r=     0.31*sin(MY_PIE*(l-412.0)/ 48.0);
+    else if (l<540.0) r=     0.00;
+    else if (l<590.0) r=     0.99*sin(MY_PIE*(l-540.0)/104.0);
+    else if (l<670.0) r=     1.00*sin(MY_PIE*(l-507.0)/182.0);
+    else if (l<730.0) r=0.32-0.32*sin(MY_PIE*(l-670.0)/128.0);
+    else              r=     0.00;
+         if (l<454.0) g=     0.00;
+    else if (l<617.0) g=     0.78*sin(MY_PIE*(l-454.0)/163.0);
+    else              g=     0.00;
+         if (l<380.0) b=     0.00;
+    else if (l<400.0) b=0.14-0.14*sin(MY_PIE*(l-364.0)/ 35.0);
+    else if (l<445.0) b=     0.96*sin(MY_PIE*(l-395.0)/104.0);
+    else if (l<510.0) b=     0.96*sin(MY_PIE*(l-377.0)/133.0);
+    else              b=     0.00;
 }
 
 
-void spectral_color_fall(double l) // RGB <- lambda l = < 380,780 > [nm] FALL TONES
-{
-    if (l<380.0){ r=.831; g=.521; b=.109;} //most dull orange
-    else if (l<480){ r= .999; g=.407; b=.015;}
-    else if (l<560){ r=.847; g=.188; b=.0001;}
-    else if (l<620){ r=.682; g=.439; b=.039;}
-    else  {r=.639; g=.164; b=.164;} //brightest
-}
-
-
-
-//-----------------------------------------------------------------------------
-// Name: mouseFunc( )
-// Desc: handles mouse stuff
-//-----------------------------------------------------------------------------
-void mouseFunc( int button, int state, int x, int y )
-{
-    if( button == GLUT_LEFT_BUTTON )
-    {
-        // when left mouse button is down
-        if( state == GLUT_DOWN )
-        {
-        }
-        else
-        {
-        }
-    }
-    else if ( button == GLUT_RIGHT_BUTTON )
-    {
-        // when right mouse button down
-        if( state == GLUT_DOWN )
-        {
-        }
-        else
-        {
-        }
-    }
-    else
-    {
-    }
-    
-    glutPostRedisplay( );
-}
 
 
 //-----------------------------------------------------------------------------
@@ -581,81 +596,151 @@ void displayFunc( )
 {
     // local state
     static GLfloat zrot = 0.0f, c = 0.0f;
-    
-    // from SoundBulb example
+    // Added-by-Kunwoo
     SAMPLE * buffer = g_fft_buffer, * ptr;
     GLint i;
     GLfloat ytemp, fval, fval_time;
-    
+
     // clear the color and depth buffers
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     
     // line width
-    glLineWidth( 1.0 );
-    // define a starting point, Replaced w this, taken from SoundBulb
-    GLfloat x = -5.0f, inc = 3.6f / g_buffer_size, y = 2.0f; //x is lenght across
+    glLineWidth( 1.0f );
+    // define a starting point
+    // soon to be used drawing offsets
+    GLfloat x = -0.7f, inc = 3.6f / g_buffer_size, y = 2.0f;
     // increment
     GLfloat xinc = ::fabs(x*2 / g_bufferSize);
     
 
     // get the latest (possibly preview) window
     memset( buffer, 0, SND_FFT_SIZE * sizeof(SAMPLE) );
-    
+
     // copy currently playing audio into buffer
     memcpy( buffer, g_buffer, g_buffer_size * sizeof(SAMPLE) );
-    
-    
+
+
     // apply hanning window
     hanning( g_window, g_buffer_size );
     apply_window( (float*)buffer, g_window, g_buffer_size );
-    
-    
+
+
     // draw the time domain waveform
     if( g_waveform )
     {
         // save the current matrix state
         glPushMatrix();
         // translate the waveform
-        glTranslatef(0, -3.5, 0.0f ); //second value is height of where its drawn
+        glTranslatef( 0, 0, 0.0f );
         glLineWidth(0.5f);
+
+        // Draw line that holds the filament
+        glBegin( GL_LINE_STRIP);
+        spectral_color(410);
+        glColor3f(r*2,g*2,b*2);
+        glVertex3f(-0.7f, 0.0f, 0.0f);
+        glVertex3f(-0.5f, -1.35f, -2.0f);
         glEnd();
-        glLineWidth(4.0f); //line fatness
+
+        // Draw line that holds the filament
+        glBegin( GL_LINE_STRIP);
+        spectral_color(670);
+        glColor3f(r*2,g*2,b*2);
+        glVertex3f(0.7f, 0.0f, 0.0f);
+        glVertex3f(0.5f, -1.35f, -2.0f);
+        glEnd();
+
+
+        // Lightbulb holder
+        glBegin( GL_LINE_STRIP);
+        for (int i = 0; i < 25; i++)
+        {
+            glColor4f(0.3, 0.3, 0.3, 1.01 - ((i+0.01f) / 25));
+            glVertex3f(-0.5f, -1.38f - 0.05f * i, -2.0f - 0.2 * i);
+            glVertex3f(0.5f, -1.38f - 0.05f * i, -2.0f - 0.2 * i);
+        }
         
+        glEnd();
+
+        glLineWidth(1.0f);
+        
+
+        // If lightbulb is broken, change the lightbulb_constant to reconstruct lightbulb
+        if (break_status == true)
+            lightbulb_constant = (600 * 2 + 47) - break_counter * 2;
+
+        
+        // Lightbulb glass1
+        glBegin( GL_LINE_STRIP);
+        for (int i = 0; i < 40; i++)
+        {  
+            spectral_color(700 - ((i+1.0f)/40 * 300.0f));
+            glColor4f(r*2,g*2,b*2, 1.0f * rand()/(RAND_MAX));
+            float angle = 2 * MY_PIE * (i+0.001f) / (lightbulb_constant);
+            glVertex2f(cos(angle-MY_PIE/3), 1.1*sin(angle-MY_PIE/3)+0.1);
+        }
+        glEnd();
+
+        // Lightbulb glass1
+        glBegin( GL_LINE_STRIP);
+        for (int i = 0; i < 40; i++)
+        {  
+            spectral_color(700 - ((i+1.0f)/40 * 300.0f));
+            glColor4f(r*2,g*2,b*2, 1.0f * rand()/(RAND_MAX));
+            float angle = 2 * MY_PIE * (i+0.001f) / (lightbulb_constant);
+            glVertex2f(cos(angle-MY_PIE/3) - 0.01, 1.1*sin(angle-MY_PIE/3)+0.075);
+        }
+        glEnd();
+        
+        // Lightbulb glass1
+        glBegin( GL_LINE_STRIP);
+        for (int i = 0; i < 40; i++)
+        {  
+            spectral_color(700 - ((i+1.0f)/40 * 300.0f));
+            glColor4f(r*2,g*2,b*2, 1.0f * rand()/(RAND_MAX));
+            float angle = 2 * MY_PIE * (i+0.001f) / (lightbulb_constant);
+            glVertex2f(cos(angle-MY_PIE/3) + 0.01, 1.1*sin(angle-MY_PIE/3)+0.05);
+        }
+        glEnd();
+
+
         // Time Domain Signal Visualizer (aka the filament)
         glBegin( GL_LINE_STRIP );
         {
             // loop through samples
             for( i = 0; i < g_bufferSize; i++ )
             {
-                //color of freq domain spectrum
                 if (i < g_bufferSize/2)
-                    glColor4f( .999, .999, .999, 0.3f + 2 * ((i + 0.01f) / g_bufferSize) );
+                glColor4f( 1.0f, 1.0f, 1.0f, 0.3f + 2 * ((i + 0.01f) / g_bufferSize) );
                 else
-                    glColor4f( .999, .999, .999, 1.3f - 2 *((i - g_bufferSize/2 + 0.01f) /g_bufferSize) );
-                glVertex2f( x , .5*buffer[i] ); //height of amplitude?
+                glColor4f( 1.0f, 1.0f, 1.0f, 1.3f - 2 *((i - g_bufferSize/2 + 0.01f) /g_bufferSize) );
+
+                if (break_status)
+                    glVertex2f( x, (64 - (break_counter)/5) * buffer[i]);
+                else
+                    glVertex2f( x , 4*buffer[i] );
                 x += xinc;
             }
             glEnd();
         }
-
-        // restore previous matrix state
+            // restore previous matrix state
         glPopMatrix();
     }
-    
+
     //Reset Drawing Offsets
     x = -5.0f;
-    
+
     // take forward FFT; result in buffer as FFT_SIZE/2 complex values
     rfft( (float *)buffer, g_fft_size/2, FFT_FORWARD );
     // cast to complex
     complex * cbuf = (complex *)buffer;
-    
+
     // color
     glColor3f( .5, .5, 1 );
     // set vertex normals
     glNormal3f( 0.0f, 1.0f, 0.0f );
-    
-    
+
+
     // copy current magnitude spectrum into waterfall memory
     for( i = 0; i < g_fft_size/2; i++ )
     {
@@ -663,93 +748,150 @@ void displayFunc( )
         g_spectrums[g_wf][i].x = x;
         // copy y, depending on scaling
         g_spectrums[g_wf][i].y = g_gain * g_freq_scale * 1.8f *
-        ::pow( 20 * cmp_abs( cbuf[i] ), .5 ) + y;
+        ::pow( 20 * cmp_abs( cbuf[i] ), .5 ) + y;     
         // increment x
         x += inc + x;
     }
-    
+
+    // draw the right things
     g_draw[g_wf] = g_wutrfall;
+
     if( !g_starting )
         g_draw[(g_wf+g_wf_delay)%g_depth] = true;
-    
+
     // reset drawing variables
     x = -5.0f; y =-4.0f;
     inc = 3.6f / g_fft_size;
-    
+
     // save current matrix state
     glPushMatrix();
-    glTranslatef(0, 1, 1* g_z); //0 0 5
+        // translate in world coordinate
+    //glTranslatef( -5.5, -4, g_z );
+    glTranslatef(0, 0, 5* g_z);
     glLineWidth(1.0f);
-    
-    // loop through each layer of waterfall
+
     for( i = 0; i < g_depth; i++ ) //means go over all g_depth lines
     {
         fval = (1.5*(g_depth - i) / (float)(g_depth));
+        //glColor3f( 1.0 * fval, 1.0 * fval, 1.0 * fval );
+        //float cval = 1 - (g_wf_delay - i) / (float)(g_wf_delay);
+        //cval = 0.4f + cval * (1.0f - 0.4f);
+        //glColor3f( 0.7f, cval, .4f);
         // set vertex normals
         glNormal3f( 0.0f, 1.0f, 0.0f );
-        
+
         Pt2D * pt = g_spectrums[(g_wf+i)%g_depth];
         
-        int circle_num = 200; //number of dots, decrease this if the computer can't handle it
+        // Circle (Divide the frequency x-axis into circle_num number of circles)
+        int circle_num = 30;
         float circle_piece = (g_fft_size/g_freq_view)/circle_num;
-        
+
+        // For each divided frequency x-axis, draw a circle and assign color
         for (GLint k = 0; k< circle_num; k++)
         {
-            glBegin( GL_POINTS ); // Points to make it look cool
-            
+
+            glBegin( GL_LINE_LOOP );
+
             for( GLint j = k * circle_piece; j < (k+1) * (g_fft_size/g_freq_view)/(circle_num); j++, pt++ )
             {
                 float angle = (circle_num*2*MY_PIE*j)/(g_fft_size/g_freq_view);
-                //angle = angle/12;
                 float radius = sqrt(pow(g_log_positions[j]/2048.0f, 2) + pow(g_spectrums[(g_wf+i)%g_depth][j].y, 2));
-                //radius = radius*4;
                 // draw the vertex
                 float d = g_backwards ? g_depth - (float) i : (float) i;
-                //which season is it?
-                if (SEASON == 0)
-                    spectral_color_winter(400 + ((j+1.0f)/(g_fft_size/g_freq_view) * 300.0f));
-                else if (SEASON == 1)
-                    spectral_color_spring(400 + ((j+1.0f)/(g_fft_size/g_freq_view) * 300.0f));
-                else if (SEASON == 2)
-                    spectral_color_summer(400 + ((j+1.0f)/(g_fft_size/g_freq_view) * 300.0f));
-                else
-                    spectral_color_fall(400 + ((j+1.0f)/(g_fft_size/g_freq_view) * 300.0f));
 
-                glColor4f(r, g, b, fader);
+                //glColor3f( 1.0 * fval, 1.0 * fval, 1.0 * fval );
+                spectral_color(400 + ((j+1.0f)/(g_fft_size/g_freq_view) * 300.0f));
+                glColor4f(r*2 * fval, g*2 * fval, b*2 * fval, fader);
 
-                // Does not appear if it is quiet enough
+                // Make the signal not appear if it is quiet enough
                 if (radius < 2.1)
                     glColor4f(0,0,0,0);
-                
-                // how fast the circles disperse from the lightbulb
+               
+                // projection determines how fast the circles disperse from the lightbulb
                 float projection ;
-                    projection = 120 - (30 * radius/2.1)-50;
+                if (break_status)
+                    projection = 40;
+                else
+                    projection = 120 - (30 * radius/2.1);
+
+                // in narrative mode, if the signal is greater than threshold, break the lightbulb
+                if (narrativekey == TRUE)
+                {
+                    if (radius > 2.7  )
+                    {
+                    break_status = true;
+                    break_counter = 0;
+                    projection = 50;
+                    }
+                }
+                // in realtime mode, if the signal is greater than threshold, break the lightbulb
+                else
+                {
+                    if (radius > 8.00)
+                    {
+                    break_status = true;
+                    break_counter = 0;
+                    projection = 50;
+                    }
+                }
                 
-                
+                // keep track of max amplitude
+                if (radius > max_amp)
+                {
+                    max_amp = radius;
+                    //cout << max_amp << endl;
+                }
+
+                // when the lightbulb is broken, skew the circle into random ellipses
+                if (break_status == true)
+                {
+                    cos_skew = (rand()/(RAND_MAX+0.1f) + 1);
+                    sin_skew = (rand()/(RAND_MAX+0.1f) + 1);
+                    d = -i * break_counter/2;
+                }
+
                 // draw the entire fft spectrum that comes out of the lightbulb
-                glVertex3f(cos_skew*radius/(pow(1.02, k)) * cos(-angle+MY_PIE/2) + (d/projection*cos(-angle+MY_PIE/2)),
-                           sin_skew*radius/(pow(1.02, k)) * sin(-angle+MY_PIE/2) + (d/projection*sin(-angle+MY_PIE/2)),
-                           -j/(g_fft_size/g_freq_view) + d/projection);
+                glVertex3f(cos_skew*radius/(pow(1.02, k)) * cos(-angle+MY_PIE/2) + (d/projection*cos(-angle+MY_PIE/2)), 
+                    sin_skew*radius/(pow(1.02, k)) * sin(-angle+MY_PIE/2) + (d/projection*sin(-angle+MY_PIE/2)), 
+                    -j/(g_fft_size/g_freq_view) + d/projection);
             }
             glEnd();
         }
         // back to default line width
         glLineWidth(1.0f);
-        
+    
     }
-    // restore matrix state
+        // restore matrix state
     glPopMatrix();
-    
-    
-    // wtrfll
-    // advance index
-    g_wf--;
-    // mod
-    g_wf = (g_wf + g_depth) % g_depth;
 
-    
+    // check if the lightbulb is broken, and assign the right values
+    if (break_status == true)
+    {
+        break_counter ++;
+        fader = 1.5 - (break_counter+0.01f) * 1/600;
+        
+        // reset to normal mode if 600 non breakable signal cycles have passed
+        if (break_counter > 600)
+        {
+            cos_skew = 1.0;
+            sin_skew = 1.0;
+            break_status = false;
+            break_counter = 0;
+            fader = 1.0;
+        }
+    }
+
+        // wtrfll
+        // advance index
+        g_wf--;
+        // mod
+        g_wf = (g_wf + g_depth) % g_depth;
+
+
+    //-------------------------------
     // end primitive
     glEnd();
+
 
     // flush!
     glFlush( );

@@ -7,7 +7,12 @@ HOSTDIR=host
 current: 
 	@echo "[chuck build]: please use one of the following configurations:"
 	@echo "   make linux-alsa, make linux-jack, make linux-pulse,"
+<<<<<<< HEAD
 	@echo "   make osx, make cygwin, make win32, or make emscripten"
+=======
+	@echo "   make osx, make cygwin, or make win32"
+
+>>>>>>> mac-dev
 
 ifneq ($(CK_TARGET),)
 .DEFAULT_GOAL:=$(CK_TARGET)
@@ -16,6 +21,7 @@ MAKECMDGOALS:=$(.DEFAULT_GOAL)
 endif
 endif
 
+<<<<<<< HEAD
 ############################## MAKE EMSCRIPTEN #################################
 EMSCRIPTENSRCS=host_web/chuck_emscripten.cpp \
     core/chuck.cpp core/chuck_absyn.cpp \
@@ -54,15 +60,23 @@ host_web/webchuck/js/webchuck.js: $(EMSCRIPTENSRCS)
         -s RESERVED_FUNCTION_POINTERS=50 -s FORCE_FILESYSTEM=1
 
 
+=======
+>>>>>>> mac-dev
 
 ############################## MAKE INSTALL ####################################
 .PHONY: osx linux-pulse linux-jack linux-alsa cygwin osx-rl test
 osx linux-pulse linux-jack linux-alsa cygwin osx-rl: SoundBulb
 
 win32:
+<<<<<<< HEAD
 	make -f $(COREDIR)/makefile.x/makefile.win32
 
 CK_VERSION=1.4.1.0
+=======
+	make -f makefile.win32
+
+CK_VERSION=1.3.6.0
+>>>>>>> mac-dev
 
 
 ########################### COMPILATION TOOLS ##################################
@@ -133,9 +147,14 @@ CXXOBJS_CORE+= chuck.o chuck_absyn.o chuck_parse.o chuck_errmsg.o \
 	chuck_frame.o chuck_symbol.o chuck_table.o chuck_utils.o \
 	chuck_vm.o chuck_instr.o chuck_scan.o chuck_type.o chuck_emit.o \
 	chuck_compile.o chuck_dl.o chuck_oo.o chuck_lang.o chuck_ugen.o \
+<<<<<<< HEAD
 	chuck_otf.o chuck_stats.o chuck_shell.o chuck_io.o \
 	chuck_carrier.o chuck_globals.o \
 	hidio_sdl.o midiio_rtmidi.o rtmidi.o ugen_osc.o ugen_filter.o \
+=======
+	chuck_otf.o chuck_stats.o chuck_shell.o chuck_io.o hidio_sdl.o \
+	midiio_rtmidi.o rtmidi.o ugen_osc.o ugen_filter.o \
+>>>>>>> mac-dev
 	ugen_stk.o ugen_xxx.o ulib_machine.o ulib_math.o ulib_std.o \
 	ulib_opsc.o ulib_regex.o util_buffers.o util_console.o \
 	util_string.o util_thread.o util_opsc.o util_serial.o \
@@ -204,8 +223,13 @@ $(CXXOBJS_HOST): %.o: %.cpp
 	@$(CXX) -MM -MQ "$@" $(CFLAGSDEPEND) $< > $*.d
 
 clean: 
+<<<<<<< HEAD
 	@rm -rf $(wildcard SoundBulb SoundBulb.exe) *.o *.d */*.{o,d} */*/*.{o,d} $(OBJS) \
         $(patsubst %.o,%.d,$(OBJS))*~ $(COREDIR)/chuck.output \
+=======
+	@rm -rf $(wildcard SoundBulb Soundbulb.exe) *.o *.d $(OBJS) \
+        $(patsubst %.o,%.d,$(OBJS)) *~ $(COREDIR)/chuck.output \
+>>>>>>> mac-dev
 	$(COREDIR)/chuck.tab.h $(COREDIR)/chuck.tab.c \
         $(COREDIR)/chuck.yy.c $(DIST_DIR){,.tgz,.zip} Release Debug
 	
@@ -220,11 +244,56 @@ test:
 # Distribution meta-targets
 # ------------------------------------------------------------------------------
 
+<<<<<<< HEAD
+=======
+.PHONY: bin-dist-osx
+bin-dist-osx: osx
+# clean out old dists
+	-rm -rf $(DIST_DIR_EXE){,.tgz,.zip}
+# create directories
+	mkdir $(DIST_DIR_EXE) $(DIST_DIR_EXE)/bin $(DIST_DIR_EXE)/doc
+# copy binary + notes
+	cp chuck $(addprefix ../notes/bin/,$(BIN_NOTES)) $(DIST_DIR_EXE)/bin
+# copy manual + notes
+	cp ../doc/manual/ChucK_manual.pdf $(addprefix ../notes/doc/,$(DOC_NOTES)) $(DIST_DIR_EXE)/doc
+# copy examples
+	svn export $(CK_SVN)/trunk/src/examples $(DIST_DIR_EXE)/examples &> /dev/null
+#cp -r examples $(DIST_DIR_EXE)/examples
+# remove .svn directories
+#-find $(DIST_DIR_EXE)/examples/ -name '.svn' -exec rm -rf '{}' \; &> /dev/null
+# copy notes
+	cp $(addprefix ../notes/,$(NOTES)) $(DIST_DIR_EXE)
+# tar/gzip
+	tar czf $(DIST_DIR_EXE).tgz $(DIST_DIR_EXE)
+
+.PHONY: bin-dist-win32
+bin-dist-win32:
+#	make win32
+# clean out old dists
+	-rm -rf $(DIST_DIR_EXE){,.tgz,.zip}
+# create directories
+	mkdir $(DIST_DIR_EXE) $(DIST_DIR_EXE)/bin $(DIST_DIR_EXE)/doc
+# copy binary + notes
+	cp Release/chuck.exe $(addprefix ../notes/bin/,$(BIN_NOTES)) $(DIST_DIR_EXE)/bin
+# copy manual + notes
+	cp ../doc/manual/ChucK_manual.pdf $(addprefix ../notes/doc/,$(DOC_NOTES)) $(DIST_DIR_EXE)/doc
+# copy examples
+	svn export $(CK_SVN)/trunk/src/examples $(DIST_DIR_EXE)/examples &> /dev/null
+#cp -r examples $(DIST_DIR_EXE)/examples
+# remove .svn directories
+#-find $(DIST_DIR_EXE)/examples/ -name '.svn' -exec rm -rf '{}' \; &> /dev/null
+# copy notes
+	cp $(addprefix ../notes/,$(NOTES)) $(DIST_DIR_EXE)
+# tar/gzip
+	zip -q -9 -r -m $(DIST_DIR_EXE).zip $(DIST_DIR_EXE)
+
+>>>>>>> mac-dev
 .PHONY: src-dist
 src-dist:
 # clean out old dists
 	rm -rf $(DIST_DIR) $(DIST_DIR){.tgz,.zip}
 # create directories
+<<<<<<< HEAD
 	mkdir $(DIST_DIR) $(DIST_DIR)/src $(DIST_DIR)/examples
 # copy src
 	git archive HEAD src | tar -x -C $(DIST_DIR)
@@ -233,5 +302,21 @@ src-dist:
 	git archive HEAD examples | tar -x -C $(DIST_DIR)
 # copy notes
 	cp $(addprefix notes/,$(NOTES)) $(DIST_DIR)
+=======
+	mkdir $(DIST_DIR) $(DIST_DIR)/doc $(DIST_DIR)/src $(DIST_DIR)/examples
+# copy src
+	git archive HEAD . | tar -x -C $(DIST_DIR)/src
+	rm -r $(DIST_DIR)/src/examples $(DIST_DIR)/src/test 
+# copy manual + notes
+	cp $(addprefix ../notes/doc/,$(DOC_NOTES)) $(DIST_DIR)/doc
+# copy examples
+	git archive HEAD examples | tar -x -C $(DIST_DIR)/
+	# svn export $(CK_SVN)/trunk/src/examples $(DIST_DIR)/examples 2>&1 > /dev/null
+#cp -r examples $(DIST_DIR)/examples
+# remove .svn directories
+#-find $(DIST_DIR)/examples/ -name '.svn' -exec rm -rf '{}' \; &> /dev/null
+# copy notes
+	cp $(addprefix ../notes/,$(NOTES)) $(DIST_DIR)
+>>>>>>> mac-dev
 # tar/gzip
 	tar czf $(DIST_DIR).tgz $(DIST_DIR)
