@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
                       MY_CHANNELS_IN); // set number of channels in
   the_chuck->setLogLevel(CK_LOG_INFO); // let chuck print more detailed log info
   the_chuck->init();                   // initialize chuck
-  the_chuck->compileFile("test.ck",
+  the_chuck->compileFile("data/main.ck",
                          "");
   // start chuck
   the_chuck->start();
