@@ -20,33 +20,7 @@ float BIODATA[NUM_LINES];
 FileIO FIO;
 
 // UGen Patch
-SinOsc s; 
-// 0.25 => s.gain;
-
-
-// Keyboard input instance 
-Hid hi;
-HidMsg msg;
-
-// key to toggle BIODATA SinOsc
-22 => int BIODATA_KEY;
-
-// key to activate Pan (x)
-27 => int PAN_KEY;
-
-// key to activate Echo (c)
-6 => int ECHO_KEY;
-
-// key to activate LPF (v)
-25 => int LPF_KEY;
-
-int LISA_CONTROLLER;
-int DRUM_MACHINE;
-
-// Boolean values to activate/deactivate filters
-0 => int PAN_BOOL;
-0 => int ECHO_BOOL;
-0 => int LPF_BOOL;
+// SinOsc s; 
 
 // track index of BIODATA
 int INDEX;
@@ -85,23 +59,8 @@ fun void main() {
 	if(!openFile(FILENAME)) me.exit();
 	readFile();
 
-	// initiate keyboard for input
-	initKeyboard();
-
-	// spork shreds
-	Machine.add(me.dir() + "pads.ck") => DRUM_MACHINE;
-	Machine.add(me.dir() + "lisa.ck") => LISA_CONTROLLER;
-
-	// spork keyboard function 
-	spork ~ kb();
-
 	// spork sonification algorithm
 	spork ~ sonifyAlgo();
-
-	// spork effect functions
-	spork ~ panEffect();
-	spork ~ echoEffect();
-	spork ~ lpfEffect();
 
 	while(true) {
 // 		for(0 => INDEX; INDEX < BIODATA.cap(); INDEX++) {
@@ -140,128 +99,6 @@ fun void readFile() {
 	}
 
 //----------------
-// name: initKeyboard()
-// desc: intiate a keyboard for input
-//----------------
-fun void initKeyboard() {
-	// which keyboard
-	0 => int device;
-
-	// get from command line
-	if( me.args() ) me.arg(0) => Std.atoi => device;
-	
-	// open keyboard (get device number from command line)
-	if( !hi.openKeyboard( device ) ) me.exit();
-	if(hi.name() != "Keychron K6" && hi.name() != "Apple Internal Keyboard / Trackpad") me.exit();
-	
-	<<< "keyboard '" + hi.name() + "' ready", "" >>>;
-
-	}
-
-//----------------
-// name: panEffect()
-// desc: Panning effect for output
-//----------------
-fun void panEffect() {
-    10::ms => dur T;
-    0.0 => float t;
-	while(true) {
-		while(PAN_BOOL) {
-            Math.sin(t) => SYNTH.pan.pan;
-            T / second * 2.5 +=> t;
-            T => now;
-		}
-		0 => SYNTH.pan.pan;
-		10::ms => now;
-	}
-}
-
-//----------------
-// name: echoEffect()
-// desc: Echo effect for output
-//----------------
-fun void echoEffect() {
-	while(true) {
-		while(ECHO_BOOL) {
-
-		10::ms => now;
-		}
-		10::ms => now;
-	}
-}
-
-//----------------
-// name: lpfEffect()
-// desc: LPF effect for output
-//----------------
-fun void lpfEffect() {
-	while(true) {
-		while(LPF_BOOL) {
-		10::ms => now;
-
-		}
-		10::ms => now;
-	}
-}
-
-//----------------
-// name: kb()
-// desc: watch for keyboard input
-//----------------
-fun void kb()
-{
-    // infinite event loop
-    while( true )
-    {
-        // wait on HidIn as event
-        hi => now;
-        
-        // messages received
-        while( hi.recv( msg ) )
-        {
-            // button donw
-            if( msg.isButtonDown() )
-            {
-                if( msg.which == BIODATA_KEY )
-                {
-					if(SYNTH.getGain() == 0) {
-							SYNTH.modulateGain(1.0);
-						} else {
-								SYNTH.modulateGain(0.0);
-							}
-                }
-				if(msg.which == PAN_KEY) {
-					if(PAN_BOOL) {
-						0 => PAN_BOOL;
-					} else {
-						1 => PAN_BOOL;
-					}
-				}
-				if(msg.which == ECHO_KEY) {
-					if(ECHO_BOOL) {
-						0 => ECHO_BOOL;
-					} else {
-						1 => ECHO_BOOL;
-					}
-
-				}
-				if(msg.which == LPF_KEY) {
-					if(LPF_BOOL) {
-						0 => LPF_BOOL;
-					} else {
-						1 => LPF_BOOL;
-					}
-
-				}
-                if(msg.which == 9) {
-                    Machine.remove(LISA_CONTROLLER);
-                }
-            }
-        }
-    }
-}
-
-//----------------
 // name: sonifyAlgo()
 // desc: algorithm to sonify biodata
 //----------------
@@ -292,7 +129,6 @@ fun void sonifyAlgo() {
 
 	SYNTH.patch(0);
 }
-
 
 /////////////////
 // SYNTH CLASS //

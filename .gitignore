@@ -7,3 +7,10 @@ src/compile_commands.json
 .ccls-cache/*
 .DS_Store
 .vscode/
+*.o
+*.d
+src/core/chuck.output
+src/core/chuck.tab.c
+src/core/chuck.tab.h
+src/core/chuck.yy.c
+src/main
