@@ -9,6 +9,7 @@
 //-----------------------------------------------------------------------------
 #include "RtAudio/RtAudio.h"
 #include "chuck.h"
+#include <Python/Python.h>
 #include <iostream>
 #include <math.h>
 #include <stdlib.h>
@@ -77,6 +78,16 @@ int callme(void *outputBuffer, void *inputBuffer, unsigned int numFrames,
 //-----------------------------------------------------------------------------
 int main(int argc, char **argv) {
 
+  // initialize the Python instance
+  Py_Initialize();
+
+  // run a Python file
+  FILE *PScriptFile = fopen("test.py", "r");
+  if (PScriptFile) {
+    PyRun_SimpleFile(PScriptFile, "ecg-hrv.py");
+    fclose(PScriptFile);
+  }
+
   // instantiate RtAudio object
   RtAudio audio;
 
@@ -132,8 +143,7 @@ int main(int argc, char **argv) {
                       MY_CHANNELS_IN); // set number of channels in
   the_chuck->setLogLevel(CK_LOG_INFO); // let chuck print more detailed log info
   the_chuck->init();                   // initialize chuck
-  the_chuck->compileFile("data/main.ck",
-                         "");
+  the_chuck->compileFile("data/main.ck", "");
   // start chuck
   the_chuck->start();
 

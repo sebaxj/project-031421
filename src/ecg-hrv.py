@@ -1,23 +1,51 @@
-'''
+"""
 TODO:
-    1. Write descriptions for each method. [DONE]
-    2. Develop runningHR()
-    3. Develop computePeaks()
-'''
+    1. Part I:
+        i. Write descriptions for each method. [DONE]
+        ii. Develop processBySegment()
+        iii. Create OSC connection (2 ways) between Python and ChucK
+        iv. Construct a way to analyze new data while sending the computer HRV and BPM 
+        from the old data
+    2. Part II:
+    3. Part III:
+
+
+Part I: HRV and BPM Analysis Pipeline:
+    1. read ECG data from csv file and import into a 1-d array [readECG(data)]
+    2. analyze data for BPM and R peaks
+    3. Compute HRV by RR algorithm (TODO: what algorithm to use?)
+    4. Develop an OSC connection between Python and ChucK
+    5. Using a constant tempo (BPM), construct a piece using the calcualted HRV (TODO: How?)
+
+Part II: Continuous HRV and BPM Pipeline:
+    1. read ECG data in frames from CSV file and process it by segments (TODO: How long are segments?)
+    2. During the overlap period, send analyzed parameters to ChucK while analyzing the new data
+
+Part III: Either convert this program to C++ or find a way to wrap it in a C++ program:
+    1. How to wrap a Python program into a C++ file to compile the entire thing into an executable
+    or...
+    2. Convert this program into a C++ program by going through the HeartPy library and converting it to 
+    C++ code
+"""
+
 # import packages
 import heartpy as hp 
 import matplotlib.pyplot as plt
 from heartpy.datautils import rolling_mean
 from  heartpy.peakdetection import check_peaks, detect_peaks, fit_peaks
 
-'''
-Global Variables 
-'''
+"""
+    Global Variables 
+"""
 # sampling rate for ECG 
 SAMPLE_RATE = 250
 
+"""
+    Helper Functions
+"""
+
 def readECG(filepath):
-    '''reads ECG data
+    """reads ECG data
 
     Funcion that reads heart data from a csv file into a 1-d array.
 
@@ -30,15 +58,87 @@ def readECG(filepath):
     -------
     data : 1-d array
         ECG data
-    '''
+    """
 
     return hp.get_data(filepath)
 
-def computePeaks(data): # TODO
-    '''computes QRS complex of ECG data
+def plotECG(data, title, peaklist=None, ybeat=None, bpm=None, show=False):
+    """displays of ECG data
 
-    Funcion that reads heart data from a 1-d array and computes the QRS complex 
-    and specifically the R peak of the data..
+    Funcion that reads heart data from a 1-d array and displays the raw signal, 
+    estimated BPM, and computed peaks.
+
+    Parameters
+    ----------
+    data : 1-d array
+        1-d array holding ECG data
+    title : string 
+        title of the plot 
+    peaklist : 1-d array
+        array of R peaks. Default is None
+    ybeat : 1-d array
+        array of heart beats. Default is None
+    bpm : float 
+        average BPM over data. Default is None
+    show : bool
+        determines whether the generated matplotlib image is shown or not.
+        Default is False
+
+    Returns
+    -------
+    ecg_plot : matplotlib object
+        matplotlib object containing computed ECG data and measures
+    """
+
+    # if no peak list or ybeat are specified, plot the raw signal only
+    if (peaklist == None) or (ybeat == None):
+        plt.figure()
+        plt.plot(data)
+        plt.show()
+        return plt
+
+    # name the plot
+    plt.title(title)
+    
+    # plot the raw signal
+    plt.plot(data, alpha=0.5, color='blue', label='raw signal')
+
+    # plot the estimated R peaks
+    if bpm == None:
+        plt.scatter(peaklist, ybeat, color='red', label='average: N/A BPM')
+    else:
+        plt.scatter(peaklist, ybeat, color='red', label='average: %.1f BPM' %bpm)
+
+    # add the bells and whistles
+    plt.legend(loc=4, framealpha=0.6)
+
+    # OPTIONAL: show plot
+    if show:
+        plt.show()
+
+    return plt
+
+
+def processAll(data): # TODO
+    """"computes measures of ECG data
+
+    Funcion that reads heart data from a 1-d array and computes the following measures:
+        bpm: float
+        ibi: float
+        sdnn: float
+        sdsd: float
+        rmssd: float
+        pnn20: float
+        pnn50: float
+        hr_mad: float
+        sd1: float
+        sd2: float
+        s: float
+        sd1/sd2: float
+        breathingrate: float
+
+    TODO: add computation of the following measures:
+        HRV from RR_indices
 
     Parameters
     ----------
@@ -47,43 +147,40 @@ def computePeaks(data): # TODO
 
     Returns
     -------
-    None
-    '''
+    WORKING_DATA : dict 
+        dict containing all working data from HeartPy
+    MEASURES : dict
+        dict containing the computed measures
+    """
 
     # run analysis for heart rate and breathing rate
-    WORKING_DATA, MEASURES = hp.process(data, SAMPLE_RATE)
+    # setting high_precision to True will enable a more specific calculation of R peaks
+    WORKING_DATA, MEASURES = hp.process(data, sample_rate=SAMPLE_RATE, clean_rr=True, 
+            clean_rr_method='quotient-filter', report_time=True, high_precision=False, high_precision_fs=1000.0)
 
-    # visualise in plot of custom size
-    rol_mean = rolling_mean(data, windowsize=0.75, sample_rate=SAMPLE_RATE)
-    peaks = fit_peaks(data, rol_mean, sample_rate=SAMPLE_RATE)
-#     WORKING_DATA = check_peaks(peaks['RR_list'], peaks['peaklist'], peaks['ybeat'])
-    peaklist = peaks['peaklist']
-    ybeat = peaks['ybeat']
-    plt.title("TEST")
-    plt.plot(data, alpha=0.5, color='blue', label="raw signal")
-    plt.plot(data, color ='green', label="moving average")
-    plt.scatter(peaklist, ybeat, color='red', label="average: %.1f BPM" %MEASURES['bpm'])
-    plt.legend(loc=4, framealpha=0.6)
-    plt.show()
-    analyzed_plot = hp.plotter(working_data=WORKING_DATA, measures=MEASURES, show=False)
-    analyzed_plot.show() # TODO: why is this not showing?
+    # TODO: Figure out where this goes
+    # rol_mean = rolling_mean(data, windowsize=0.75, sample_rate=SAMPLE_RATE)
+
+    # peaks = fit_peaks(data, rol_mean, sample_rate=SAMPLE_RATE)
+    # peaks = detect_peaks(data, rol_mean, ma_perc=20, sample_rate=SAMPLE_RATE)
+    # fit_peaks is more accurate than detect_peaks because it uses a varrying threshold
+
+    #  WORKING_DATA = check_peaks(peaks['RR_list'], peaks['peaklist'], peaks['ybeat'])
+    # peaklist = peaks['peaklist']
+    # ybeat = peaks['ybeat']
     
     # display computed measures
+    print('\nECG data analyed as whole...\n')
     for measure in MEASURES.keys():
         print('%s: %f' %(measure, MEASURES[measure]))
 
-    # detect peaks
-    rol_mean = rolling_mean(data, windowsize=0.75, sample_rate=SAMPLE_RATE)
- #    peaks = detect_peaks(data, rol_mean, ma_perc=20, sample_rate=SAMPLE_RATE)
- # fit_peaks is more accurate than detect_peaks because it uses a varrying threshold
-    print("PEAKS: ", peaks['peaklist'])
-    print("RR Indices:", peaks['RR_indices'])
-    print("RR List:", peaks['RR_list'])
-    print("PEAKS ROLL MEAN: ", peaks['rolling_mean'])
-    print("ROLLING MEAN: ", rol_mean)
+    # TODO: is the RR_indices or difference in MEASURES?
+    print('RR Indices (ms):', WORKING_DATA['RR_indices'])
 
-def runningHR(data, length, overlap): # TODO
-    '''computes running HR
+    return WORKING_DATA, MEASURES
+
+def processBySegment(data, length, overlap): # TODO
+    """computes running HR
 
     Funcion that reads heart data from a 1-d array and computes the running 
     HR over defined segments (seconds)
@@ -100,51 +197,40 @@ def runningHR(data, length, overlap): # TODO
     Returns
     -------
     None
-    '''
+    """
 
     WORKING_DATA, MEASURES = hp.process_segmentwise(data, sample_rate=SAMPLE_RATE, segment_width=length, segment_overlap=overlap)
 
     # display computed measures
+    print('\nECG data analyzed in', length, 'second segments with', overlap * length, 'second overlap...\n')
     for key in MEASURES.keys():
-        print(key, ":", MEASURES[key])
+        print(key, ':', MEASURES[key], '\n')
 
-def plotData(data, length, width):
-    '''plot ECG data
-
-    Funcion that plots heart data from a 1-d array
-
-    Parameters
-    ----------
-    data : 1-d array
-        1-d array holding ECG data
-    length : int or float
-        length of figure size 
-    width : int or float
-        width of figure size 
-
-    Returns
-    -------
-    None
-    '''
-
-    plt.figure(figsize=(length,width))
-    plt.plot(data)
-    plt.show()
-
+"""
+    Main Program
+    entry point: main()
+"""
 def main():
-    print("\n--- hrv-ecg.py main() ---")
+    print('\n--- hrv-ecg.py main() ---')
 
     # read data from csv file
-    data = readECG("data/e0103.csv")
+    data = readECG('data/e0103.csv')
 
     # view raw data
-    # plotData(data, 12, 4)
+    plotECG(data, 'Raw ECG without peak detection', show=True)
 
     # run peak detection analysis
-    computePeaks(data)
+    WORKING_DATA, MEASURES = processAll(data)
+
+    # plot data
+    raw_plot = plotECG(data, 'Raw ECG', WORKING_DATA['peaklist'], WORKING_DATA['ybeat'], MEASURES['bpm'], show=True)
 
     # calculate HR over time
-    runningHR(data, 5, 0.1)
+    processBySegment(data, 5, 0.1)
 
-if __name__ == "__main__":
+    # all done!
+    print('\nexiting...')
+
+# run as a standalone file
+if __name__ == '__main__':
     main()
