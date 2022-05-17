@@ -222,7 +222,7 @@ def processBySegment(data, length, overlap, log=False): # TODO
     entry point: main()
 """
 def main():
-    print('\n--- hrv-ecg.py main() ---')
+    print('\n--- hrv_ecg.py main() ---')
 
     # read data from csv file
     data = readECG('data/e0103.csv')
