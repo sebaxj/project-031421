@@ -11,9 +11,9 @@ TODO:
 
 
 Part I: HRV and BPM Analysis Pipeline:
-    1. read ECG data from csv file and import into a 1-d array [readECG(data)]
-    2. analyze data for BPM and R peaks
-    3. Compute HRV by RR algorithm (TODO: what algorithm to use?)
+    1. read ECG data from csv file and import into a 1-d array [readECG(data)] [DONE]
+    2. analyze data for BPM and R peaks [DONE]
+    3. Compute HRV by RR algorithm [DONE]
     4. Develop an OSC connection between Python and ChucK
     5. Using a constant tempo (BPM), construct a piece using the calcualted HRV (TODO: How?)
 
@@ -94,7 +94,11 @@ def plotECG(data, title, peaklist=None, ybeat=None, bpm=None, show=False):
     if (peaklist == None) or (ybeat == None):
         plt.figure()
         plt.plot(data)
-        plt.show()
+
+        # OPTIONAL: show plot
+        if show:
+            plt.show()
+            
         return plt
 
     # name the plot
@@ -119,7 +123,7 @@ def plotECG(data, title, peaklist=None, ybeat=None, bpm=None, show=False):
     return plt
 
 
-def processAll(data): # TODO
+def processAll(data, log=False): # TODO
     """"computes measures of ECG data
 
     Funcion that reads heart data from a 1-d array and computes the following measures:
@@ -137,13 +141,13 @@ def processAll(data): # TODO
         sd1/sd2: float
         breathingrate: float
 
-    TODO: add computation of the following measures:
-        HRV from RR_indices
-
     Parameters
     ----------
     data : 1-d array
         1-d array holding ECG data
+    log : bool 
+        bool to specifiy if the computed measures should be printed or not. 
+        Default is False
 
     Returns
     -------
@@ -170,16 +174,14 @@ def processAll(data): # TODO
     # ybeat = peaks['ybeat']
     
     # display computed measures
-    print('\nECG data analyed as whole...\n')
-    for measure in MEASURES.keys():
-        print('%s: %f' %(measure, MEASURES[measure]))
-
-    # TODO: is the RR_indices or difference in MEASURES?
-    print('RR Indices (ms):', WORKING_DATA['RR_indices'])
+    if log:
+        print('\nECG data analyed as whole...\n')
+        for measure in MEASURES.keys():
+            print('%s: %f' %(measure, MEASURES[measure]))
 
     return WORKING_DATA, MEASURES
 
-def processBySegment(data, length, overlap): # TODO
+def processBySegment(data, length, overlap, log=False): # TODO
     """computes running HR
 
     Funcion that reads heart data from a 1-d array and computes the running 
@@ -193,18 +195,27 @@ def processBySegment(data, length, overlap): # TODO
         length in seconds of a single segment 
     overlap : int or float
         0 <= int or float < 1 of overlap between segments
+    log : bool 
+        bool to specifiy if the computed measures should be printed or not. 
+        Default is False
 
     Returns
     -------
-    None
+    WORKING_DATA : dict 
+        dict containing all working data from HeartPy
+    MEASURES : dict
+        dict containing the computed measures
     """
 
     WORKING_DATA, MEASURES = hp.process_segmentwise(data, sample_rate=SAMPLE_RATE, segment_width=length, segment_overlap=overlap)
 
     # display computed measures
-    print('\nECG data analyzed in', length, 'second segments with', overlap * length, 'second overlap...\n')
-    for key in MEASURES.keys():
-        print(key, ':', MEASURES[key], '\n')
+    if log:
+        print('\nECG data analyzed in', length, 'second segments with', overlap * length, 'second overlap...\n')
+        for key in MEASURES.keys():
+            print(key, ':', MEASURES[key], '\n')
+
+    return WORKING_DATA, MEASURES
 
 """
     Main Program
@@ -217,13 +228,21 @@ def main():
     data = readECG('data/e0103.csv')
 
     # view raw data
-    plotECG(data, 'Raw ECG without peak detection', show=True)
+    plotECG(data, 'Raw ECG without peak detection', show=False)
 
     # run peak detection analysis
     WORKING_DATA, MEASURES = processAll(data)
 
     # plot data
-    raw_plot = plotECG(data, 'Raw ECG', WORKING_DATA['peaklist'], WORKING_DATA['ybeat'], MEASURES['bpm'], show=True)
+    plotECG(data, 'Raw ECG', WORKING_DATA['peaklist'], WORKING_DATA['ybeat'], MEASURES['bpm'], show=False)
+
+    # extract HRV
+    # MEASURES['RMSDD'] contains the root mean of successive differences between normal heartbeats
+    # let dti be the difference of (dri+1 - dri), the difference between heartbeats in ms. 
+    # let n be the number of differences computed (dt0...i)
+    # rmsdd = sqrt((sum(pow(dti, 2)) / n))
+    # see https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5624990/
+    hrv = MEASURES['rmssd']
 
     # calculate HR over time
     processBySegment(data, 5, 0.1)

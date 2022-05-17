@@ -76,6 +76,11 @@ LD=g++
 ############################# COMPILER FLAGS ###################################
 CFLAGS+=-I. -I$(COREDIR) -I$(COREDIR)/lo
 
+#CFLAGS += -Wno-unused-result -Wsign-compare -Wunreachable-code -DNDEBUG -g -fwrapv -O3 -Wall -I/Library/Developer/CommandLineTools/SDKs/MacOSX12.3.sdk/usr/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX12.3.sdk/usr/include
+CFLAGS += -I/usr/local/Cellar/python@3.10/3.10.2/Frameworks/Python.framework/Headers
+CFLAGS += -lpython
+
+
 ifneq ($(CHUCK_STAT),)
 CFLAGS+= -D__CHUCK_STAT_TRACK__
 endif

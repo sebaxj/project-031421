@@ -9,7 +9,7 @@
 //-----------------------------------------------------------------------------
 #include "RtAudio/RtAudio.h"
 #include "chuck.h"
-#include <Python/Python.h>
+#include <Python.h>
 #include <iostream>
 #include <math.h>
 #include <stdlib.h>
@@ -79,14 +79,17 @@ int callme(void *outputBuffer, void *inputBuffer, unsigned int numFrames,
 int main(int argc, char **argv) {
 
   // initialize the Python instance
-  Py_Initialize();
+  void Py_Initialize();
 
   // run a Python file
-  FILE *PScriptFile = fopen("test.py", "r");
+  FILE *PScriptFile = fopen("ecg-hrv.py", "r");
   if (PScriptFile) {
-    PyRun_SimpleFile(PScriptFile, "ecg-hrv.py");
+    // PyRun_SimpleFile(PScriptFile, "ecg-hrv.py");
+
     fclose(PScriptFile);
   }
+  // Close the python instance
+  void Py_Finalize();
 
   // instantiate RtAudio object
   RtAudio audio;
