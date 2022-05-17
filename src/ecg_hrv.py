@@ -3,7 +3,7 @@ TODO:
     1. Part I:
         i. Write descriptions for each method. [DONE]
         ii. Develop processBySegment()
-        iii. Create OSC connection (2 ways) between Python and ChucK
+        iii. Create OSC connection (2 ways) between Python and ChucK [DONE]
         iv. Construct a way to analyze new data while sending the computer HRV and BPM 
         from the old data
     2. Part II:
@@ -14,7 +14,7 @@ Part I: HRV and BPM Analysis Pipeline:
     1. read ECG data from csv file and import into a 1-d array [readECG(data)] [DONE]
     2. analyze data for BPM and R peaks [DONE]
     3. Compute HRV by RR algorithm [DONE]
-    4. Develop an OSC connection between Python and ChucK
+    4. Develop an OSC connection between Python and ChucK [DONE]
     5. Using a constant tempo (BPM), construct a piece using the calcualted HRV (TODO: How?)
 
 Part II: Continuous HRV and BPM Pipeline:
@@ -33,6 +33,10 @@ import heartpy as hp
 import matplotlib.pyplot as plt
 from heartpy.datautils import rolling_mean
 from  heartpy.peakdetection import check_peaks, detect_peaks, fit_peaks
+import time
+
+# import OSC client
+import osc_client as osc
 
 """
     Global Variables 
@@ -236,6 +240,9 @@ def main():
     # plot data
     plotECG(data, 'Raw ECG', WORKING_DATA['peaklist'], WORKING_DATA['ybeat'], MEASURES['bpm'], show=False)
 
+    # extract bpm 
+    bpm = MEASURES['bpm']
+
     # extract HRV
     # MEASURES['RMSDD'] contains the root mean of successive differences between normal heartbeats
     # let dti be the difference of (dri+1 - dri), the difference between heartbeats in ms. 
@@ -244,8 +251,21 @@ def main():
     # see https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5624990/
     hrv = MEASURES['rmssd']
 
+    # extract breathing rate
+    breathing_rate = MEASURES['breathingrate']
+
+    # send OSC message via client with measures of interest
+    print('\nsending measures for all data')
+    osc.msg_send(bpm, hrv, breathing_rate)
+
     # calculate HR over time
-    processBySegment(data, 5, 0.1)
+    WORKING_DATA, MEASURES = processBySegment(data, 20, 0.1)
+
+    # send to ChucK at 5 second intervals
+    print('\nsending measures for segmented (20 seconds) data')
+    for i in range(len(MEASURES['bpm'])):
+        osc.msg_send(MEASURES['bpm'][i], MEASURES['rmssd'][i], MEASURES['breathingrate'][i])
+        time.sleep(15)
 
     # all done!
     print('\nexiting...')

@@ -1,27 +1,41 @@
 # import packages
 import argparse
-import random
-import time
-
 from pythonosc import udp_client
 
-def msg_send():
+def msg_send(bpm, hrv, breathing_rate):
     """send OSC message to client 
 
     This program sends 10 random values between 0.0 and 1.0 to the /filter address,
     waiting for 1 seconds between each value.
+
+    Parameters
+    ----------
+    bpm : float
+        value of BPM from heat data
+    hrv : float
+        value of HRV from heat data
+    br : float
+        value of breathing rate from heat data
+
+    Returns
+    -------
+    0 (success), else failure
     """
 
+    # setup message parse with server IP and port
     parser = argparse.ArgumentParser()
     parser.add_argument("--ip", default="127.0.0.1", help="The ip of the OSC server")
     parser.add_argument("--port", type=int, default=5005, help="The port the OSC server is listening on")
     args = parser.parse_args()
 
+    # create the client
     client = udp_client.SimpleUDPClient(args.ip, args.port)
 
-    for x in range(10):
-        client.send_message("/bpm/hrv/br", [59.0, 1.0, 99.0])
-        time.sleep(1)
+    # send the message
+    client.send_message("/bpm/hrv/br", [bpm, hrv, breathing_rate])
+
+    # all done! exit successfully...
+    return 0
 
 """
     Main Program
@@ -31,7 +45,7 @@ def main():
     print('\n--- osc_client.py main() ---')
 
     # send 10 messages 
-    msg_send()
+    msg_send(60.0, 1.0, 99.0)
 
     # all done!
     print('\nexiting...')

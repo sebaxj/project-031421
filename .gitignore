@@ -14,3 +14,4 @@ src/core/chuck.tab.c
 src/core/chuck.tab.h
 src/core/chuck.yy.c
 src/main
+__pycache__
