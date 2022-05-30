@@ -34,6 +34,8 @@ import matplotlib.pyplot as plt
 from heartpy.datautils import rolling_mean
 from  heartpy.peakdetection import check_peaks, detect_peaks, fit_peaks
 import time
+import math
+from scipy import stats
 
 # import OSC client
 import osc_client as osc
@@ -255,17 +257,20 @@ def main():
     breathing_rate = MEASURES['breathingrate']
 
     # send OSC message via client with measures of interest
-    print('\nsending measures for all data')
-    osc.msg_send(bpm, hrv, breathing_rate)
+    # print('\nsending measures for all data')
+    # osc.msg_send(bpm, hrv, breathing_rate)
 
-    # calculate HR over time
-    WORKING_DATA, MEASURES = processBySegment(data, 20, 0.1)
+    # calculate HR over 10 second segments
+    WORKING_DATA, MEASURES = processBySegment(data, 10, 0.1)
 
-    # send to ChucK at 5 second intervals
-    print('\nsending measures for segmented (20 seconds) data')
+    # create HRV normal distribution
+    X = stats.norm(38.7, 33.27)
+
+    # send to ChucK at 10 second intervals
+    print('\nsending measures for segmented (10 seconds) data')
     for i in range(len(MEASURES['bpm'])):
-        osc.msg_send(MEASURES['bpm'][i], MEASURES['rmssd'][i], MEASURES['breathingrate'][i])
-        time.sleep(15)
+        osc.msg_send(MEASURES['bpm'][i], MEASURES['rmssd'][i], X.cdf(MEASURES['rmssd'][i]))
+        time.sleep(10)
 
     # all done!
     print('\nexiting...')
