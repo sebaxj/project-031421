@@ -21,7 +21,7 @@ Synth s;
 // global variables to track OSC received variables
 60.0 => float BASE_HR;
 BASE_HR => float HR;
-28.0 => float HRV;
+38.7 => float HRV;
 0.5 => float P_HRV;
 0 => float ROOT;
 6.382 => float ENTROPY_OF_MU;
@@ -40,8 +40,22 @@ main();
 //--------
 fun void main() { // {{{ TODO: remove
 
+	<<< "Starting baseline()..." >>>;
+
 	// play the baseline
-	// baseline();
+	baseline();
+
+	<<< "Finished baseline(), starting sonification algorithm in..." >>>;
+	<<< "5" >>>;
+	1::second => now;
+	<<< "4" >>>;
+	1::second => now;
+	<<< "3" >>>;
+	1::second => now;
+	<<< "2" >>>;
+	1::second => now;
+	<<< "1" >>>;
+	1::second => now;
 	
 	// spork the OSC server
 	spork ~ oscServe();
@@ -68,23 +82,34 @@ fun void main() { // {{{ TODO: remove
 fun void baseline() { // {{{ TODO: remove
 
 	// value of middle C [CONSTANT]
-	60 => int MIDDLE_C;
+	60 => float MIDDLE_C;
 
 	// int to track the octave of the root note
-	int octave;
+	float octave;
 
 	for(0 => int i; i < 24; i++) {
 		// for each beat there is a 0.5 probability of that beat being played
 		// for the sake of simplicity, Math.random2(0, 1) generates 0 or 1 randomly
 		// where 1 is mapped to success and 0 is mapped to failure
+
+		// randomly choose a note from a 12-tone 
+		// equally tempered scale from root
+		// Math.random2(0, 12) generates a interval above the root
+		MIDDLE_C + (12 * Math.random2(-2, 2)) => octave;
+		do {
+				Math.random2(0, 12) => ROOT;
+		} while(ROOT == 1 || ROOT == 6 || ROOT == 8 || ROOT == 10);
+
+		// randomly choose a value for entropy in the range +- 1SD of HRV
+		Math.random2f(5.661, 7.103) => ENTROPY;
+
+		// randomly choose a value for HR in the range [30, 100]
+		Math.random2f(30, 100) => HR;
+
+		// randomly choose a value for HRV in the range [10, 62]
+		Math.random2f(10, 62) => HRV;
+
 		if(Math.random2(0, 1)) {
-			// if a note is played, randomly choose a note from a 12-tone 
-			// equally tempered scale from root
-			// Math.random2(0, 12) generates a interval above the root
-			MIDDLE_C + (12 * Math.random2(-2, 2)) => octave;
-			do {
-					Math.random2(0, 12) => ROOT;
-			} while(ROOT == 1 || ROOT == 6 || ROOT == 8 || ROOT == 10);
 			spork ~ s.play(octave + ROOT, 1.0, 100::ms, 80::ms, 0.5, 200::ms);
 			(HR / BASE_HR)::second => now;
 		} else {
@@ -92,6 +117,13 @@ fun void baseline() { // {{{ TODO: remove
 			(HR / BASE_HR)::second => now;
 		}
 	}
+
+	// reset HR, HRV, ENTROPY, and ROOT values
+	BASE_HR => float HR;
+	38.7 => float HRV;
+	0 => float ROOT;
+	ENTROPY_OF_MU => float ENTROPY;
+
 }
 // }}} TODO: remove
 
