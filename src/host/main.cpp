@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
   the_chuck->init();                   // initialize chuck
 
   // ChucK file to compile
-  the_chuck->compileFile("osc_server.ck", "");
+  the_chuck->compileFile("main.ck", "");
 
   // start chuck
   the_chuck->start();
