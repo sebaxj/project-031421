@@ -53,12 +53,32 @@ SCALE_DEGREE = [0, 2, 4, 6, 7, 9, 11]
 SCALE_DEGREE_m = [0, 2, 3, 6, 7, 9, 11]
 
 # arrays of root note PDF's 
-TIER1 = [0.2, 0.1, 0.15, 0.05, 0.2, 0.18, 0.12]
-TIER2 = [0.3, 0.08, 0.1, 0.1, 0.22, 0.1, 0.1]
-TIER3 = [0.32, 0.1, 0.05, 0.19, 0.2, 0.1, 0.04]
-TIER4 = [0.18, 0.1, 0.15, 0.1, 0.27, 0.12, 0.08]
-TIER5 = [0.15, 0.2, 0.18, 0.1, 0.1, 0.1, 0.17]
-TIER6 = [0.08, 0.28, 0.2, 0.08, 0.1, 0.1, 0.16]
+# I
+I1 = [0.00, 0.00, 0.02, 0.00, 0.08, 0.10, 0.80]
+I2 = [0.10, 0.10, 0.05, 0.05, 0.30, 0.10, 0.30]
+I3 = [0.20, 0.10, 0.18, 0.10, 0.30, 0.02, 0.10]
+I4 = [0.15, 0.14, 0.14, 0.14, 0.15, 0.14, 0.14]
+I5 = [0.20, 0.10, 0.08, 0.12, 0.30, 0.10, 0.10]
+I6 = [0.40, 0.10, 0.00, 0.10, 0.08, 0.30, 0.02]
+I7 = [0.30, 0.00, 0.00, 0.30, 0.30, 0.10, 0.00]
+
+# ii, iii, IV, or vi
+S1 = [0.00, 0.20, 0.30, 0.08, 0.02, 0.10, 0.30]
+S2 = [0.00, 0.30, 0.30, 0.00, 0.05, 0.05, 0.30]
+S3 = [0.10, 0.30, 0.08, 0.05, 0.12, 0.05, 0.30]
+S4 = [0.10, 0.04, 0.00, 0.05, 0.26, 0.30, 0.25]
+S5 = [0.10, 0.16, 0.04, 0.15, 0.30, 0.15, 0.10]
+S6 = [0.10, 0.05, 0.00, 0.10, 0.40, 0.15, 0.20]
+S7 = [0.00, 0.10, 0.00, 0.00, 0.60, 0.00, 0.30]
+
+# V or Vii
+D1 = [0.00, 0.10, 0.30, 0.10, 0.02, 0.40, 0.08]
+D2 = [0.00, 0.20, 0.30, 0.10, 0.02, 0.30, 0.08]
+D3 = [0.20, 0.20, 0.00, 0.08, 0.10, 0.30, 0.12]
+D4 = [0.30, 0.10, 0.00, 0.00, 0.20, 0.20, 0.20]
+D5 = [0.45, 0.05, 0.00, 0.12, 0.25, 0.05, 0.08]
+D6 = [0.50, 0.00, 0.00, 0.05, 0.30, 0.05, 0.10]
+D7 = [0.70, 0.00, 0.00, 0.00, 0.25, 0.05, 0.00]
 
 # previous scale degree
 PREV_SCALE_DEGREE = 0
@@ -244,18 +264,7 @@ def calRoot(hrv, root):
     """calculate the root note from the hrv
 
     Function takes in HRV and calculates the root note of the chord to be 
-    played from PDF below.
-
-    |------------------------------------------------------------------|
-    |  hrv range	|	I  |  ii  |  iii  |   IV  |   V |   vi |   vii |
-    |---------------|------|------|-------|-------|-----|------|-------|
-    |<11.1          |0.08  |0.28  |0.2    |0.08   |0.1  |0.1   |0.16   |
-    |<27.6 && >11.1 |0.15  |0.2   |0.18   |0.1    |0.1  |0.1   |0.17   |
-    |<38.7 && >27.6 |0.18  |0.1   |0.15   |0.1    |0.27 |0.12  |0.08   |
-    |>38.7 && <49.8 |0.2   |0.1   |0.15   |0.05   |0.2  |0.18  |0.12   |
-    |>49.8 && <55.3 |0.3   |0.08  |0.1    |0.1    |0.22 |0.1   |0.1    |
-    |>55.3          |0.32  |0.1   |0.05   |0.19   |0.2  |0.1   |0.04   |
-    |------------------------------------------------------------------|
+    played from the HRV scale degree PDF.
 
     Parameters
     --------
@@ -273,34 +282,76 @@ def calRoot(hrv, root):
 
     """
 
-    if root == 0 or root == 2 or root == 4 or root == 5 or root == 9:
-        if hrv < 11.1:
-            return np.random.choice(SCALE_DEGREE_m, 1, p=TIER6)[0]
-        elif hrv >= 11.1 and hrv < 27.6:
-            return np.random.choice(SCALE_DEGREE_m, 1, p=TIER5)[0]
+    if root == 0 or root == 12:
+        if hrv < 16.5:
+            return np.random.choice(SCALE_DEGREE_m, 1, p=I1)[0]
+        elif hrv >= 16.5 and hrv < 22.1:
+            return np.random.choice(SCALE_DEGREE_m, 1, p=I2)[0]
+        elif hrv >= 22.1 and hrv < 27.6:
+            return np.random.choice(SCALE_DEGREE_m, 1, p=I3)[0]
         elif hrv >= 27.6 and hrv < 38.7:
-            return np.random.choice(SCALE_DEGREE, 1, p=TIER4)[0]
+            return np.random.choice(SCALE_DEGREE, 1, p=I4)[0]
         elif hrv >= 38.7 and hrv < 49.8:
-            return np.random.choice(SCALE_DEGREE, 1, p=TIER1)[0]
-        elif hrv >= 49.8 and hrv < 55.3:
-            return np.random.choice(SCALE_DEGREE, 1, p=TIER2)[0]
-        elif hrv >= 55.3:
-            return np.random.choice(SCALE_DEGREE, 1, p=TIER3)[0]
+            return np.random.choice(SCALE_DEGREE, 1, p=I5)[0]
+        elif hrv >= 49.8 and hrv < 55.5:
+            return np.random.choice(SCALE_DEGREE, 1, p=I6)[0]
+        elif hrv >= 55.5:
+            return np.random.choice(SCALE_DEGREE, 1, p=I7)[0]
+    if root == 0 or root == 2 or root == 3 or root == 4 or root == 5 or root == 9:
+        if hrv < 16.5:
+            return np.random.choice(SCALE_DEGREE_m, 1, p=S1)[0]
+        elif hrv >= 16.5 and hrv < 22.1:
+            return np.random.choice(SCALE_DEGREE_m, 1, p=S2)[0]
+        elif hrv >= 22.1 and hrv < 27.6:
+            return np.random.choice(SCALE_DEGREE_m, 1, p=S3)[0]
+        elif hrv >= 27.6 and hrv < 38.7:
+            return np.random.choice(SCALE_DEGREE, 1, p=S4)[0]
+        elif hrv >= 38.7 and hrv < 49.8:
+            return np.random.choice(SCALE_DEGREE, 1, p=S5)[0]
+        elif hrv >= 49.8 and hrv < 55.5:
+            return np.random.choice(SCALE_DEGREE, 1, p=S6)[0]
+        elif hrv >= 55.5:
+            return np.random.choice(SCALE_DEGREE, 1, p=S7)[0]
     elif root == 11 or root == 7:
-        if hrv < 11.1:
-            return np.random.choice([0, 7, 9, 11], 1, p=[0.1, 0.2, 0.5, 0.2])[0]
-        elif hrv >= 11.1 and hrv < 27.6:
-            return np.random.choice([0, 7, 9, 11], 1, p=[0.3, 0.1, 0.4, 0.2])[0]
+        if hrv < 16.5:
+            return np.random.choice(SCALE_DEGREE_m, 1, p=D1)[0]
+        elif hrv >= 16.5 and hrv < 22.1:
+            return np.random.choice(SCALE_DEGREE_m, 1, p=D2)[0]
+        elif hrv >= 22.1 and hrv < 27.6:
+            return np.random.choice(SCALE_DEGREE_m, 1, p=D3)[0]
         elif hrv >= 27.6 and hrv < 38.7:
-            return np.random.choice([0, 7, 9, 11], 1, p=[0.2, 0.3, 0.4, 0.1])[0]
+            return np.random.choice(SCALE_DEGREE, 1, p=D4)[0]
         elif hrv >= 38.7 and hrv < 49.8:
-            return np.random.choice([0, 7, 9, 11], 1, p=[0.3, 0.4, 0.2, 0.1])[0]
-        elif hrv >= 49.8 and hrv < 55.3:
-            return np.random.choice([0, 7, 9, 11], 1, p=[0.3, 0.5, 0.1, 0.1])[0]
-        elif hrv >= 55.3:
-            return np.random.choice([0, 7, 9, 11], 1, p=[0.4, 0.5, 0.0, 0.0])[0]
+            return np.random.choice(SCALE_DEGREE, 1, p=D5)[0]
+        elif hrv >= 49.8 and hrv < 55.5:
+            return np.random.choice(SCALE_DEGREE, 1, p=D6)[0]
+        elif hrv >= 55.5:
+            return np.random.choice(SCALE_DEGREE, 1, p=D7)[0]
 
     return 0
+
+def information_of_x(p):
+    """information of p(HRV)
+
+    Function takes in the PDF of an observed HRV value and returns the information 
+    (from information theory/Shannon Entropy) provided by the HRV value.
+
+    A highly likely HRV value yields low suprisal (high probability of HRV occuring).
+    A lowly likely HRV value yields high suprisal (low probability of HRV occuring).
+
+    Parameters
+    --------
+    p : float 
+        PDF of P(X = HRV)
+
+    Returns
+    --------
+    I(E) : float 
+        Information of p in bits: I(p(E)) = -math.log(p)
+
+    """
+
+    return -math.log2(p)
 
 
 """
@@ -314,13 +365,13 @@ def main():
     data = readECG('data/e0103.csv')
 
     # view raw data
-    plotECG(data, 'Raw ECG without peak detection', show=False)
+    # plotECG(data, 'Raw ECG without peak detection', show=False)
 
     # run peak detection analysis
     WORKING_DATA, MEASURES = processAll(data)
 
     # plot data
-    plotECG(data, 'Raw ECG', WORKING_DATA['peaklist'], WORKING_DATA['ybeat'], MEASURES['bpm'], show=False)
+    # plotECG(data, 'Raw ECG', WORKING_DATA['peaklist'], WORKING_DATA['ybeat'], MEASURES['bpm'], show=False)
 
     # extract bpm 
     bpm = MEASURES['bpm']
@@ -343,16 +394,27 @@ def main():
     # calculate HR over 10 second segments
     WORKING_DATA, MEASURES = processBySegment(data, 10, 0.1)
 
-    # create HRV normal distribution
-    X = stats.norm(38.7, 33.27)
+    # create HRV normal distribution 55.3
+    mu = 38.7
+    sd = 33.27
+    X = stats.norm(mu, sd)
+
+    print('I(mean of HRV) = %.3f' % information_of_x(X.pdf(mu)))
+    print('I(mu + 0.3SD) = %.3f' % information_of_x(X.pdf(mu + (0.3 * sd))))
+    print('I(mu + 0.5SD) = %.3f' % information_of_x(X.pdf(mu + (0.5 * sd))))
+    print('I(mu + 1SD) = %.3f' % information_of_x(X.pdf(mu + (1 * sd))))
+    print('I(mu + 2SD) = %.3f' % information_of_x(X.pdf(mu + (2 * sd))))
+    print('I(mu - 0.3SD) = %.3f' % information_of_x(X.pdf(mu - (0.3 * sd))))
+    print('I(mu - 0.5SD) = %.3f' % information_of_x(X.pdf(mu - (0.5 * sd))))
+    print('I(mu - 1SD) = %.3f' % information_of_x(X.pdf(mu - (1 * sd))))
 
     # send to ChucK at 10 second intervals
     print('\nsending measures for segmented (10 seconds) data')
     root = 0
     for i in range(len(MEASURES['bpm'])):
         root = calRoot(MEASURES['rmssd'][i], root)
-        print(MEASURES['bpm'][i], MEASURES['rmssd'][i], X.cdf(MEASURES['rmssd'][i]), root)
-        osc.msg_send(MEASURES['bpm'][i], MEASURES['rmssd'][i], X.cdf(MEASURES['rmssd'][i]), root)
+        print(MEASURES['bpm'][i], MEASURES['rmssd'][i], X.cdf(MEASURES['rmssd'][i]), root, information_of_x(X.pdf(MEASURES['rmssd'][i])))
+        osc.msg_send(MEASURES['bpm'][i], MEASURES['rmssd'][i], X.cdf(MEASURES['rmssd'][i]), root, information_of_x(X.pdf(MEASURES['rmssd'][i])))
         time.sleep(10)
 
     # all done!

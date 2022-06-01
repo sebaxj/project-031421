@@ -12,8 +12,8 @@ OscMsg msg;
 // use port 5005 (or whatever)
 5005 => oin.port;
 
-// create an address in the receiver, expect an int and a float
-oin.addAddress( "/bpm/hrv/p_hrv/root, f f f f" );
+// create an address in the receiver, expect a float
+oin.addAddress( "/bpm/hrv/p_hrv/root/i, f f f f f" );
 
 // Synth instance
 Synth s;
@@ -24,6 +24,9 @@ BASE_HR => float HR;
 28.0 => float HRV;
 0.5 => float P_HRV;
 0 => float ROOT;
+6.382 => float ENTROPY_OF_MU;
+6.562 => float ENTROPY_OF_1SD;
+ENTROPY_OF_MU => float ENTROPY;
 
 // constants
 4 => int BAR_LENGTH;
@@ -35,7 +38,7 @@ main();
 // name: main()
 // desc: entry point
 //--------
-fun void main() {
+fun void main() { // {{{ TODO: remove
 
 	// play the baseline
 	// baseline();
@@ -51,6 +54,7 @@ fun void main() {
 		1::second => now;
 	}
 }
+//}}} TODO: remove
 
 //--------
 // name: baseline()
@@ -61,10 +65,13 @@ fun void main() {
 // bpm = 60 = BASE_HR
 // P(beat is played) = p = 0.5 (random)
 //--------
-fun void baseline() {
+fun void baseline() { // {{{ TODO: remove
 
-	// define the root note (C)
-	60 + (12 * Math.random2(-2, 2)) => int root;
+	// value of middle C [CONSTANT]
+	60 => int MIDDLE_C;
+
+	// int to track the octave of the root note
+	int octave;
 
 	for(0 => int i; i < 24; i++) {
 		// for each beat there is a 0.5 probability of that beat being played
@@ -74,7 +81,11 @@ fun void baseline() {
 			// if a note is played, randomly choose a note from a 12-tone 
 			// equally tempered scale from root
 			// Math.random2(0, 12) generates a interval above the root
-			spork ~ s.play(root + Math.random2(0, 12), 1.0, 100::ms, 80::ms, 0.5, 200::ms);
+			MIDDLE_C + (12 * Math.random2(-2, 2)) => octave;
+			do {
+					Math.random2(0, 12) => ROOT;
+			} while(ROOT == 1 || ROOT == 6 || ROOT == 8 || ROOT == 10);
+			spork ~ s.play(octave + ROOT, 1.0, 100::ms, 80::ms, 0.5, 200::ms);
 			(HR / BASE_HR)::second => now;
 		} else {
 			// do nothing
@@ -82,12 +93,13 @@ fun void baseline() {
 		}
 	}
 }
+// }}} TODO: remove
 
 //--------
 // name: cal_HR_octave()
 // desc: passed a raw HR value and returns octave of root
 //--------
-fun int cal_HR_octave(float hr) {
+fun int cal_HR_octave(float hr) { // {{{ TODO: remove
 	
 	if(hr < 40) {
 		return -24;
@@ -104,18 +116,22 @@ fun int cal_HR_octave(float hr) {
 	// default return 
 	return 0;
 }
+// }}} TODO: remove
 
 //--------
 // name: sonify()
 // desc: primary sonification algorithm
 //--------
-fun void sonify() {
+fun void sonify() { // {{{ TODO: remove
+
+	// value of middle C [CONSTANT]
+	60 => float MIDDLE_C;
 
 	float root;
 
 	// infinite event loop
 	while(true) {
-		cal_HR_octave(HR) + 60 => root;
+		cal_HR_octave(HR) + MIDDLE_C => root;
 		if(Math.random2f(0, 1) <= (1 - P_HRV)) { // prob of note being played is the complement of the pdf
 			// if a note is played, randomly choose a note from a 12-tone 
 			// equally tempered scale from root
@@ -127,8 +143,8 @@ fun void sonify() {
 			(HR / BASE_HR)::second => now;
 		}
 	}
-
 }
+// }}} TODO: remove
 
 // TODO: Decompose this method into its own file and use events to signal between
 // shreds.
@@ -136,7 +152,7 @@ fun void sonify() {
 // name: oscServe()
 // desc: function to handle the OSC server 
 //--------
-fun void oscServe() {
+fun void oscServe() { // {{{ TODO: remove
 
 	// infinite event loop
 	while( true )
@@ -147,35 +163,33 @@ fun void oscServe() {
 	    // grab the next message from the queue. 
 	    while( oin.recv(msg) )
 	    { 
-	        // expected datatypes (note: as indicated by "f")
-	        float bpm;
-			float hrv;
-			float p_hrv;
-			float root;
 	
 	        // fetch the first data element as float
-	        msg.getFloat(0) => bpm => HR;
+	        msg.getFloat(0) => HR;
 	        // fetch the second data element as float
-	        msg.getFloat(1) => hrv => HRV;
+	        msg.getFloat(1) => HRV;
 	        // fetch the third data element as float
-	        msg.getFloat(2) => p_hrv => P_HRV;
+	        msg.getFloat(2) => P_HRV;
 			// fetch the fourth data element as an float 
-			msg.getFloat(3) => root => ROOT;
+			msg.getFloat(3) => ROOT;
+			// fetch the fifth data element as a float
+			msg.getFloat(4) => ENTROPY;
 	
 	        // print
-	        <<< "got (via OSC):", "[BPM]:", bpm, "[HRV]:", hrv, "[CDF of HRV]:", p_hrv, "[ROOT]:", root >>>;
+	        <<< "got (via OSC):", "[BPM]:", HR, "[HRV]:", HRV, "[CDF of HRV]:", P_HRV, "[ROOT]:", ROOT, "[I(x)]:", ENTROPY >>>;
 	    }
 	}
 }
+// }}} TODO: remove
 
 //--------
 // CLASS
 // name: Synth
 // desc: synth instrument class 
 //--------
-class Synth {
+class Synth { // {{{ TODO: remove
 
-	fun void play(float root, float vel, dur a, dur d, float s, dur r) {
+	fun void play(float root, float vel, dur a, dur d, float s, dur r) { // {{{ TODO: remove
 
 		[0., 4., 7., 12., -5., 16.] @=> float consonantMaj[];
 		[0., 3., 7., 12., -5., 15.] @=> float consonantMin[];
@@ -183,70 +197,213 @@ class Synth {
 
 		if(HRV < 27.6) {
 			if(ROOT == 11) {
-				spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
+				if(ENTROPY > ENTROPY_OF_1SD) {
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+
+					// refactory period  for reverb
+					5::second => now;
+
+				} else {
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+
+					// refactory period  for reverb
+					5::second => now;
+
+				}
 			} else {
-				spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
+				if(ENTROPY > ENTROPY_OF_1SD) {
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+
+					// refactory period  for reverb
+					5::second => now;
+
+				} else {
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+						
+					// refactory period  for reverb
+					5::second => now;
+
+				}
 			}
 		} else {
-			if(ROOT == 0 || ROOT == 5 || ROOT == 7) {
-				spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
+			if(ROOT == 0 || ROOT == 5 || ROOT == 7 || ROOT == 12) {
+				if(ENTROPY > ENTROPY_OF_1SD) {
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+
+					// refactory period  for reverb
+					5::second => now;
+
+				} else {
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+
+					// refactory period  for reverb
+					5::second => now;
+
+				}
 			} else if(ROOT == 2 || ROOT == 3 || ROOT == 4 || ROOT == 9) {
-				spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
+				if(ENTROPY > ENTROPY_OF_1SD) {
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+
+					// refactory period  for reverb
+					5::second => now;
+					
+				} else {
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+
+					// refactory period  for reverb
+					5::second => now;
+					
+				}
 			} else if(ROOT == 11) {
-				spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
-				spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
-				((HR / BASE_HR) / 5)::second => now;
+				if(ENTROPY > ENTROPY_OF_1SD) {
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+
+					// refactory period  for reverb
+					5::second => now;
+
+				} else {
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+					((HR / BASE_HR) / 5)::second => now;
+					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
+
+					// refactory period  for reverb
+					5::second => now;
+
+				}
 			}
 		}
-
-		// refactory period  for reverb
-		5::second => now;
 	}
+	// }}} TODO: remove
 
-	fun void playNote(float root, float vel, dur a, dur d, float s, dur r, float p) {
+	fun void playNote(float root, float vel, dur a, dur d, float s, dur r, float p) { // {{{ TODO: remove
 
 		// UGen patch
 		TriOsc tri => ADSR e => Pan2 pan => LPF low => NRev rev => Gain g => dac;
@@ -278,7 +435,9 @@ class Synth {
 
 		tri !=> e !=> pan !=> low !=> rev !=> g !=> dac;
 	}
+	// }}} TODO: remove
 }
+// }}} TODO: remove
 
 
 
