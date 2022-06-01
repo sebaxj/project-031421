@@ -29,6 +29,7 @@ Part III: Either convert this program to C++ or find a way to wrap it in a C++ p
 """
 
 # import packages
+from argparse import REMAINDER
 import heartpy as hp 
 import matplotlib.pyplot as plt
 from heartpy.datautils import rolling_mean
@@ -36,6 +37,7 @@ from  heartpy.peakdetection import check_peaks, detect_peaks, fit_peaks
 import time
 import math
 from scipy import stats
+import numpy as np
 
 # import OSC client
 import osc_client as osc
@@ -45,6 +47,21 @@ import osc_client as osc
 """
 # sampling rate for ECG 
 SAMPLE_RATE = 250
+
+# array of scale degrees
+SCALE_DEGREE = [0, 2, 4, 6, 7, 9, 11]
+SCALE_DEGREE_m = [0, 2, 3, 6, 7, 9, 11]
+
+# arrays of root note PDF's 
+TIER1 = [0.2, 0.1, 0.15, 0.05, 0.2, 0.18, 0.12]
+TIER2 = [0.3, 0.08, 0.1, 0.1, 0.22, 0.1, 0.1]
+TIER3 = [0.32, 0.1, 0.05, 0.19, 0.2, 0.1, 0.04]
+TIER4 = [0.18, 0.1, 0.15, 0.1, 0.27, 0.12, 0.08]
+TIER5 = [0.15, 0.2, 0.18, 0.1, 0.1, 0.1, 0.17]
+TIER6 = [0.08, 0.28, 0.2, 0.08, 0.1, 0.1, 0.16]
+
+# previous scale degree
+PREV_SCALE_DEGREE = 0
 
 """
     Helper Functions
@@ -223,6 +240,69 @@ def processBySegment(data, length, overlap, log=False): # TODO
 
     return WORKING_DATA, MEASURES
 
+def calRoot(hrv, root):
+    """calculate the root note from the hrv
+
+    Function takes in HRV and calculates the root note of the chord to be 
+    played from PDF below.
+
+    |------------------------------------------------------------------|
+    |  hrv range	|	I  |  ii  |  iii  |   IV  |   V |   vi |   vii |
+    |---------------|------|------|-------|-------|-----|------|-------|
+    |<11.1          |0.08  |0.28  |0.2    |0.08   |0.1  |0.1   |0.16   |
+    |<27.6 && >11.1 |0.15  |0.2   |0.18   |0.1    |0.1  |0.1   |0.17   |
+    |<38.7 && >27.6 |0.18  |0.1   |0.15   |0.1    |0.27 |0.12  |0.08   |
+    |>38.7 && <49.8 |0.2   |0.1   |0.15   |0.05   |0.2  |0.18  |0.12   |
+    |>49.8 && <55.3 |0.3   |0.08  |0.1    |0.1    |0.22 |0.1   |0.1    |
+    |>55.3          |0.32  |0.1   |0.05   |0.19   |0.2  |0.1   |0.04   |
+    |------------------------------------------------------------------|
+
+    Parameters
+    --------
+
+    hrv : float
+        HRV value
+    root : float 
+        value of previous scale degree
+
+    Returns
+    --------
+
+    root : float 
+        scale degree of root note
+
+    """
+
+    if root == 0 or root == 2 or root == 4 or root == 5 or root == 9:
+        if hrv < 11.1:
+            return np.random.choice(SCALE_DEGREE_m, 1, p=TIER6)[0]
+        elif hrv >= 11.1 and hrv < 27.6:
+            return np.random.choice(SCALE_DEGREE_m, 1, p=TIER5)[0]
+        elif hrv >= 27.6 and hrv < 38.7:
+            return np.random.choice(SCALE_DEGREE, 1, p=TIER4)[0]
+        elif hrv >= 38.7 and hrv < 49.8:
+            return np.random.choice(SCALE_DEGREE, 1, p=TIER1)[0]
+        elif hrv >= 49.8 and hrv < 55.3:
+            return np.random.choice(SCALE_DEGREE, 1, p=TIER2)[0]
+        elif hrv >= 55.3:
+            return np.random.choice(SCALE_DEGREE, 1, p=TIER3)[0]
+    elif root == 11 or root == 7:
+        if hrv < 11.1:
+            return np.random.choice([0, 7, 9, 11], 1, p=[0.1, 0.2, 0.5, 0.2])[0]
+        elif hrv >= 11.1 and hrv < 27.6:
+            return np.random.choice([0, 7, 9, 11], 1, p=[0.3, 0.1, 0.4, 0.2])[0]
+        elif hrv >= 27.6 and hrv < 38.7:
+            return np.random.choice([0, 7, 9, 11], 1, p=[0.2, 0.3, 0.4, 0.1])[0]
+        elif hrv >= 38.7 and hrv < 49.8:
+            return np.random.choice([0, 7, 9, 11], 1, p=[0.3, 0.4, 0.2, 0.1])[0]
+        elif hrv >= 49.8 and hrv < 55.3:
+            return np.random.choice([0, 7, 9, 11], 1, p=[0.3, 0.5, 0.1, 0.1])[0]
+        elif hrv >= 55.3:
+            return np.random.choice([0, 7, 9, 11], 1, p=[0.4, 0.5, 0.0, 0.0])[0]
+
+    return 0
+
+
 """
     Main Program
     entry point: main()
@@ -268,8 +348,11 @@ def main():
 
     # send to ChucK at 10 second intervals
     print('\nsending measures for segmented (10 seconds) data')
+    root = 0
     for i in range(len(MEASURES['bpm'])):
-        osc.msg_send(MEASURES['bpm'][i], MEASURES['rmssd'][i], X.cdf(MEASURES['rmssd'][i]))
+        root = calRoot(MEASURES['rmssd'][i], root)
+        print(MEASURES['bpm'][i], MEASURES['rmssd'][i], X.cdf(MEASURES['rmssd'][i]), root)
+        osc.msg_send(MEASURES['bpm'][i], MEASURES['rmssd'][i], X.cdf(MEASURES['rmssd'][i]), root)
         time.sleep(10)
 
     # all done!

@@ -2,7 +2,7 @@
 import argparse
 from pythonosc import udp_client
 
-def msg_send(bpm, hrv, p_hrv):
+def msg_send(bpm, hrv, p_hrv, root):
     """send OSC message to client 
 
     This program sends 10 random values between 0.0 and 1.0 to the /filter address,
@@ -16,6 +16,8 @@ def msg_send(bpm, hrv, p_hrv):
         value of HRV from heat data
     p_hrv : float
         value of CDF of HRV observation
+    root : float
+        scale degree of root
 
     Returns
     -------
@@ -32,7 +34,7 @@ def msg_send(bpm, hrv, p_hrv):
     client = udp_client.SimpleUDPClient(args.ip, args.port)
 
     # send the message
-    client.send_message("/bpm/hrv/p_hrv", [bpm, hrv, p_hrv])
+    client.send_message("/bpm/hrv/p_hrv/root", [bpm, hrv, p_hrv, float(root)])
 
     # all done! exit successfully...
     return 0
@@ -43,9 +45,6 @@ def msg_send(bpm, hrv, p_hrv):
 """
 def main():
     print('\n--- osc_client.py main() ---')
-
-    # send 10 messages 
-    msg_send(60.0, 1.0, 99.0)
 
     # all done!
     print('\nexiting...')
