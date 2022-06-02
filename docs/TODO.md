@@ -94,7 +94,7 @@ STOP
 ChucK
 START
 1. For each note:
-	2. The probability of a note actually being played is the complement of the CDF of the
+	2. The probability of a note actually being played is the CDF of the
 	observed CDF.
 	3. Choose the octave of the root.
 		4. If HR is lower than 40 then HR is in C2 octave.
@@ -116,9 +116,9 @@ START
 			16. Else, the notes come from a major chord.
 				Array of MIDI note intervals above a root, chosen from randomly: [0, 4, 7, 12, -5, 16]
 
-	17. If the informational entropy value of the observed HRV value occuring is greater than 6.562
-	(this value is the information of the mean HRV value (6.382) plus half the standard deviation
-	of the HRV distribution (33.27):
+	17. If the informational entropy value of the observed HRV value occuring is greater than 8.005
+	(this value is the information of the mean HRV value (6.382) plus  one and a half the information value of
+	standard deviation of the HRV distribution (33.27):
 		18. Play the array of notes 3 times simultaneously to create polyphony.
 		19. Wait the duration between notes as calculated by HR.
 		20. HR / 60 bpm is the time in seconds between notes.
@@ -135,8 +135,4 @@ STOP
 
 ## TODO:
 
-1. Refine `baseline()` function.
-2. Add more heart data.
-3. Clean up code.
-4. Write final writeup.
-5. Embed python in C++ code.
+1. Write final writeup.

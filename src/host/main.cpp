@@ -43,6 +43,9 @@ using namespace std;
 
 ChucK *the_chuck = NULL;
 
+// stringstream for compiling chuck code
+stringstream ss;
+
 // Chuck sample rate
 // const t_CKFLOAT CHUCK_MY_SRATE = 44100;
 // Chuck number of channels
@@ -73,6 +76,67 @@ int callme(void *outputBuffer, void *inputBuffer, unsigned int numFrames,
 }
 
 //-----------------------------------------------------------------------------
+// name: readVec()
+// desc: read strings from a file containing biodata and push the float into a
+// vector
+//-----------------------------------------------------------------------------
+void readVec(vector<float> &bioVec, string filePath) {
+  // open a new file stream
+  ifstream bioData;
+  bioData.open(filePath);
+
+  // primitives to convert the string from the file into a float in bioVec
+  string line;
+  float num;
+
+  // while the file is open and good, read it line by line
+  if (bioData.is_open()) {
+    while (bioData.good()) {
+      getline(bioData, line);
+      if (line != "") {
+        num = stof(line);
+        bioVec.push_back(num);
+      }
+    }
+  }
+
+  // finished reading
+  bioData.close();
+}
+
+//-----------------------------------------------------------------------------
+// name: readStr()
+// desc: read a vector of floats and form a string stream of ChucK code
+//-----------------------------------------------------------------------------
+void readStr(vector<float> &bioVec, int caseNum) {
+  switch (caseNum) {
+  case 1:
+    // patch
+    ss << "SinOsc s => dac; .25 => s.gain; ";
+
+    // translate bioVec data into an array in chuck code
+    ss << "[";
+    for (int i = 0; i < bioVec.size(); i++) {
+      ss << bioVec[i] << ", ";
+    }
+    ss << "0] @=> float bioDataArr[];";
+
+    // infinite loop to play bioDataArr as a function of a sine wave frequency
+    ss << "while(true) {"
+          "for(0 => int i; i < bioDataArr.cap(); i++) {"
+          "(bioDataArr[i] * 100.0) + 440.0 => s.freq;"
+          "<<< s.freq() >>>;"
+          "50::ms => now;"
+          "}"
+          "}";
+    break;
+  default:
+    ss << "<<< 'no string defined' >>>;";
+    break;
+  }
+}
+
+//-----------------------------------------------------------------------------
 // name: main()
 // desc: entry point
 //-----------------------------------------------------------------------------
@@ -90,6 +154,10 @@ int main(int argc, char **argv) {
   }
   // Close the python instance
   void Py_Finalize();
+
+  // read data in from file
+  vector<float> bioVec; // vector to store float values in file
+  readVec(bioVec, "./assets/biosignals.txt"); // 28 readings per second
 
   // instantiate RtAudio object
   RtAudio audio;
@@ -147,8 +215,20 @@ int main(int argc, char **argv) {
   the_chuck->setLogLevel(CK_LOG_INFO); // let chuck print more detailed log info
   the_chuck->init();                   // initialize chuck
 
+  // EITHER:
+  // 1. choose a .ck file to be compiled by Chuck
+  // 2. create a string stream to be sent to ChucK
+
   // ChucK file to compile
   the_chuck->compileFile("main.ck", "");
+
+  /*
+  // (2)
+  readStr(bioVec, 1);
+
+  // compile string stream into chuck code
+  the_chuck->compileCode(ss.str(), "");
+  */
 
   // start chuck
   the_chuck->start();

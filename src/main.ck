@@ -13,7 +13,7 @@ OscMsg msg;
 5005 => oin.port;
 
 // create an address in the receiver, expect a float
-oin.addAddress( "/bpm/hrv/p_hrv/root/i, f f f f f" );
+oin.addAddress( "/bpm/hrv/p_hrv/root/i/s, f f f f f i" );
 
 // Synth instance
 Synth s;
@@ -25,11 +25,10 @@ BASE_HR => float HR;
 0.5 => float P_HRV;
 0 => float ROOT;
 6.382 => float ENTROPY_OF_MU;
-6.562 => float ENTROPY_OF_1SD;
+8.005 => float ENTROPY_BOUND;
 ENTROPY_OF_MU => float ENTROPY;
-
-// constants
-4 => int BAR_LENGTH;
+0.35 => float CDF_LOWER_BOUND;
+0 => int STATUS;
 
 // call main function
 main();
@@ -43,30 +42,36 @@ fun void main() { // {{{ TODO: remove
 	<<< "Starting baseline()..." >>>;
 
 	// play the baseline
-	baseline();
+	// baseline();
 
-	<<< "Finished baseline(), starting sonification algorithm in..." >>>;
-	<<< "5" >>>;
-	1::second => now;
-	<<< "4" >>>;
-	1::second => now;
-	<<< "3" >>>;
-	1::second => now;
-	<<< "2" >>>;
-	1::second => now;
-	<<< "1" >>>;
-	1::second => now;
-	
+	<<< "Finished baseline(), starting sonification algorithm..." >>>;
+
 	// spork the OSC server
 	spork ~ oscServe();
 
+	// add ChucK recorder to the VM
+	Machine.add("record.ck") => int id;
+
+	// prepend empty space to beginning of the recording
+	1::second => now;
+	
 	// spork sonify algorithm
 	spork ~ sonify();
-
+	
 	// infinite loop
-	while(true) {
+	while(STATUS == 0) {
 		1::second => now;
 	}
+	
+	// allow reverb to finish 
+	1::second => now;
+
+	// remove shred with id
+    Machine.remove(id);
+
+	// all done!
+	<<< "main() finished successfully" >>>;
+	<<< "exiting..." >>>;
 }
 //}}} TODO: remove
 
@@ -87,7 +92,7 @@ fun void baseline() { // {{{ TODO: remove
 	// int to track the octave of the root note
 	float octave;
 
-	for(0 => int i; i < 24; i++) {
+	for(0 => int i; i < 48; i++) {
 		// for each beat there is a 0.5 probability of that beat being played
 		// for the sake of simplicity, Math.random2(0, 1) generates 0 or 1 randomly
 		// where 1 is mapped to success and 0 is mapped to failure
@@ -100,8 +105,8 @@ fun void baseline() { // {{{ TODO: remove
 				Math.random2(0, 12) => ROOT;
 		} while(ROOT == 1 || ROOT == 6 || ROOT == 8 || ROOT == 10);
 
-		// randomly choose a value for entropy in the range +- 1SD of HRV
-		Math.random2f(5.661, 7.103) => ENTROPY;
+		// randomly choose a value for entropy in the range +- 2SD of HRV
+		Math.random2f(3.497, 9.267) => ENTROPY;
 
 		// randomly choose a value for HR in the range [30, 100]
 		Math.random2f(30, 100) => HR;
@@ -164,7 +169,7 @@ fun void sonify() { // {{{ TODO: remove
 	// infinite event loop
 	while(true) {
 		cal_HR_octave(HR) + MIDDLE_C => root;
-		if(Math.random2f(0, 1) <= (1 - P_HRV)) { // prob of note being played is the complement of the pdf
+		if(Math.random2f(0, 1) <= P_HRV || P_HRV < CDF_LOWER_BOUND) { // prob of note being played is the CDF or is played if CDF < .35
 			// if a note is played, randomly choose a note from a 12-tone 
 			// equally tempered scale from root
 			// Math.random2(0, 12) generates a interval above the root
@@ -195,20 +200,21 @@ fun void oscServe() { // {{{ TODO: remove
 	    // grab the next message from the queue. 
 	    while( oin.recv(msg) )
 	    { 
-	
-	        // fetch the first data element as float
-	        msg.getFloat(0) => HR;
-	        // fetch the second data element as float
-	        msg.getFloat(1) => HRV;
-	        // fetch the third data element as float
-	        msg.getFloat(2) => P_HRV;
+        	// fetch the first data element as float
+        	msg.getFloat(0) => HR;
+        	// fetch the second data element as float
+        	msg.getFloat(1) => HRV;
+        	// fetch the third data element as float
+        	msg.getFloat(2) => P_HRV;
 			// fetch the fourth data element as an float 
 			msg.getFloat(3) => ROOT;
 			// fetch the fifth data element as a float
 			msg.getFloat(4) => ENTROPY;
-	
-	        // print
-	        <<< "got (via OSC):", "[BPM]:", HR, "[HRV]:", HRV, "[CDF of HRV]:", P_HRV, "[ROOT]:", ROOT, "[I(x)]:", ENTROPY >>>;
+			// fetch the sixth data element as a int 
+			msg.getInt(5) => STATUS;
+
+        	// print
+        	<<< "got (via OSC):", "[BPM]:", HR, "[HRV]:", HRV, "[CDF of HRV]:", P_HRV, "[ROOT]:", ROOT, "[I(x)]:", ENTROPY >>>;
 	    }
 	}
 }
@@ -229,7 +235,7 @@ class Synth { // {{{ TODO: remove
 
 		if(HRV < 27.6) {
 			if(ROOT == 11) {
-				if(ENTROPY > ENTROPY_OF_1SD) {
+				if(ENTROPY > ENTROPY_BOUND) {
 					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
 					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
 					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
@@ -269,7 +275,7 @@ class Synth { // {{{ TODO: remove
 
 				}
 			} else {
-				if(ENTROPY > ENTROPY_OF_1SD) {
+				if(ENTROPY > ENTROPY_BOUND) {
 					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
 					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
 					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
@@ -311,7 +317,7 @@ class Synth { // {{{ TODO: remove
 			}
 		} else {
 			if(ROOT == 0 || ROOT == 5 || ROOT == 7 || ROOT == 12) {
-				if(ENTROPY > ENTROPY_OF_1SD) {
+				if(ENTROPY > ENTROPY_BOUND) {
 					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
 					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
 					spork ~ playNote(root + consonantMaj[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
@@ -351,7 +357,7 @@ class Synth { // {{{ TODO: remove
 
 				}
 			} else if(ROOT == 2 || ROOT == 3 || ROOT == 4 || ROOT == 9) {
-				if(ENTROPY > ENTROPY_OF_1SD) {
+				if(ENTROPY > ENTROPY_BOUND) {
 					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
 					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
 					spork ~ playNote(root + consonantMin[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
@@ -391,7 +397,7 @@ class Synth { // {{{ TODO: remove
 					
 				}
 			} else if(ROOT == 11) {
-				if(ENTROPY > ENTROPY_OF_1SD) {
+				if(ENTROPY > ENTROPY_BOUND) {
 					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
 					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));
 					spork ~ playNote(root + dim[Math.random2(0,5)], vel, a, d, s, r, Math.random2f(-1, 1));

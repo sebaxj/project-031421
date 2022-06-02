@@ -15,3 +15,6 @@ src/core/chuck.tab.h
 src/core/chuck.yy.c
 src/main
 __pycache__
+analysis/
+src/data/european-st-t-database-1.0.0/
+src/data/MLII/

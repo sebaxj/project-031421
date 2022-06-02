@@ -1,1 +1,0 @@
-[104b.ck]:line(1): global Object 'foo' has different type 'HidMsg' than already existing global Object of the same name

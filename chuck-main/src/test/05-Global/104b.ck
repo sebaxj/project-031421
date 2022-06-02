@@ -1,2 +1,0 @@
-global HidMsg foo;
-<<< "success" >>>;

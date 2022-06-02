@@ -1,43 +1,12 @@
-"""
-TODO:
-    1. Part I:
-        i. Write descriptions for each method. [DONE]
-        ii. Develop processBySegment()
-        iii. Create OSC connection (2 ways) between Python and ChucK [DONE]
-        iv. Construct a way to analyze new data while sending the computer HRV and BPM 
-        from the old data
-    2. Part II:
-    3. Part III:
-
-
-Part I: HRV and BPM Analysis Pipeline:
-    1. read ECG data from csv file and import into a 1-d array [readECG(data)] [DONE]
-    2. analyze data for BPM and R peaks [DONE]
-    3. Compute HRV by RR algorithm [DONE]
-    4. Develop an OSC connection between Python and ChucK [DONE]
-    5. Using a constant tempo (BPM), construct a piece using the calcualted HRV (TODO: How?)
-
-Part II: Continuous HRV and BPM Pipeline:
-    1. read ECG data in frames from CSV file and process it by segments (TODO: How long are segments?)
-    2. During the overlap period, send analyzed parameters to ChucK while analyzing the new data
-
-Part III: Either convert this program to C++ or find a way to wrap it in a C++ program:
-    1. How to wrap a Python program into a C++ file to compile the entire thing into an executable
-    or...
-    2. Convert this program into a C++ program by going through the HeartPy library and converting it to 
-    C++ code
-"""
-
 # import packages
-from argparse import REMAINDER
 import heartpy as hp 
 import matplotlib.pyplot as plt
-from heartpy.datautils import rolling_mean
-from  heartpy.peakdetection import check_peaks, detect_peaks, fit_peaks
 import time
 import math
 from scipy import stats
 import numpy as np
+import csv
+import os
 
 # import OSC client
 import osc_client as osc
@@ -45,9 +14,6 @@ import osc_client as osc
 """
     Global Variables 
 """
-# sampling rate for ECG 
-SAMPLE_RATE = 250
-
 # array of scale degrees
 SCALE_DEGREE = [0, 2, 4, 6, 7, 9, 11]
 SCALE_DEGREE_m = [0, 2, 3, 6, 7, 9, 11]
@@ -79,9 +45,6 @@ D4 = [0.30, 0.10, 0.00, 0.00, 0.20, 0.20, 0.20]
 D5 = [0.45, 0.05, 0.00, 0.12, 0.25, 0.05, 0.08]
 D6 = [0.50, 0.00, 0.00, 0.05, 0.30, 0.05, 0.10]
 D7 = [0.70, 0.00, 0.00, 0.00, 0.25, 0.05, 0.00]
-
-# previous scale degree
-PREV_SCALE_DEGREE = 0
 
 """
     Helper Functions
@@ -166,7 +129,7 @@ def plotECG(data, title, peaklist=None, ybeat=None, bpm=None, show=False):
     return plt
 
 
-def processAll(data, log=False): # TODO
+def processAll(data, data_sample_rate, log=False):
     """"computes measures of ECG data
 
     Funcion that reads heart data from a 1-d array and computes the following measures:
@@ -188,6 +151,8 @@ def processAll(data, log=False): # TODO
     ----------
     data : 1-d array
         1-d array holding ECG data
+    data_sample_rate : float
+        sample rate of the ECG data
     log : bool 
         bool to specifiy if the computed measures should be printed or not. 
         Default is False
@@ -202,19 +167,8 @@ def processAll(data, log=False): # TODO
 
     # run analysis for heart rate and breathing rate
     # setting high_precision to True will enable a more specific calculation of R peaks
-    WORKING_DATA, MEASURES = hp.process(data, sample_rate=SAMPLE_RATE, clean_rr=True, 
+    WORKING_DATA, MEASURES = hp.process(data, sample_rate=data_sample_rate, clean_rr=True, 
             clean_rr_method='quotient-filter', report_time=True, high_precision=False, high_precision_fs=1000.0)
-
-    # TODO: Figure out where this goes
-    # rol_mean = rolling_mean(data, windowsize=0.75, sample_rate=SAMPLE_RATE)
-
-    # peaks = fit_peaks(data, rol_mean, sample_rate=SAMPLE_RATE)
-    # peaks = detect_peaks(data, rol_mean, ma_perc=20, sample_rate=SAMPLE_RATE)
-    # fit_peaks is more accurate than detect_peaks because it uses a varrying threshold
-
-    #  WORKING_DATA = check_peaks(peaks['RR_list'], peaks['peaklist'], peaks['ybeat'])
-    # peaklist = peaks['peaklist']
-    # ybeat = peaks['ybeat']
     
     # display computed measures
     if log:
@@ -224,7 +178,7 @@ def processAll(data, log=False): # TODO
 
     return WORKING_DATA, MEASURES
 
-def processBySegment(data, length, overlap, log=False): # TODO
+def processBySegment(data, data_sample_rate, length, overlap, log=False):
     """computes running HR
 
     Funcion that reads heart data from a 1-d array and computes the running 
@@ -234,6 +188,8 @@ def processBySegment(data, length, overlap, log=False): # TODO
     ----------
     data : 1-d array
         1-d array holding ECG data
+    data_sample_rate : float
+        sample rate of the ECG data
     length : int or float
         length in seconds of a single segment 
     overlap : int or float
@@ -250,7 +206,7 @@ def processBySegment(data, length, overlap, log=False): # TODO
         dict containing the computed measures
     """
 
-    WORKING_DATA, MEASURES = hp.process_segmentwise(data, sample_rate=SAMPLE_RATE, segment_width=length, segment_overlap=overlap)
+    WORKING_DATA, MEASURES = hp.process_segmentwise(data, sample_rate=data_sample_rate, segment_width=length, segment_overlap=overlap)
 
     # display computed measures
     if log:
@@ -362,37 +318,36 @@ def main():
     print('\n--- hrv_ecg.py main() ---')
 
     # read data from csv file
-    data = readECG('data/e0103.csv')
+    # data = readECG('data/e0103.csv') # sample rate = 250
+    # data = readECG('data/e0110.csv') # sample rate = 250
+    # data = readECG('data/e0124.csv') # sample rate = 250
+    # data = readECG('data/afib.csv') # sample rate = 360
+    data = readECG('data/nsr.csv') # sample rate = 360
+
+    # set sample rate 
+    data_sample_rate = 360
 
     # view raw data
-    # plotECG(data, 'Raw ECG without peak detection', show=False)
+    plotECG(data, 'Raw ECG without peak detection', show=True)
 
     # run peak detection analysis
-    WORKING_DATA, MEASURES = processAll(data)
-
-    # plot data
-    # plotECG(data, 'Raw ECG', WORKING_DATA['peaklist'], WORKING_DATA['ybeat'], MEASURES['bpm'], show=False)
-
-    # extract bpm 
-    bpm = MEASURES['bpm']
-
-    # extract HRV
     # MEASURES['RMSDD'] contains the root mean of successive differences between normal heartbeats
     # let dti be the difference of (dri+1 - dri), the difference between heartbeats in ms. 
     # let n be the number of differences computed (dt0...i)
     # rmsdd = sqrt((sum(pow(dti, 2)) / n))
     # see https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5624990/
-    hrv = MEASURES['rmssd']
+    WORKING_DATA, MEASURES = processAll(data, data_sample_rate)
 
-    # extract breathing rate
-    breathing_rate = MEASURES['breathingrate']
-
-    # send OSC message via client with measures of interest
-    # print('\nsending measures for all data')
-    # osc.msg_send(bpm, hrv, breathing_rate)
+    # plot data
+    plotECG(data, 'Raw ECG', WORKING_DATA['peaklist'], WORKING_DATA['ybeat'], MEASURES['bpm'], show=True)
 
     # calculate HR over 10 second segments
-    WORKING_DATA, MEASURES = processBySegment(data, 10, 0.1)
+    # MEASURES['RMSDD'] contains the root mean of successive differences between normal heartbeats
+    # let dti be the difference of (dri+1 - dri), the difference between heartbeats in ms. 
+    # let n be the number of differences computed (dt0...i)
+    # rmsdd = sqrt((sum(pow(dti, 2)) / n))
+    # see https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5624990/
+    WORKING_DATA, MEASURES = processBySegment(data, data_sample_rate, 10, 0.1)
 
     # create HRV normal distribution 55.3
     mu = 38.7
@@ -403,19 +358,57 @@ def main():
     print('I(mu + 0.3SD) = %.3f' % information_of_x(X.pdf(mu + (0.3 * sd))))
     print('I(mu + 0.5SD) = %.3f' % information_of_x(X.pdf(mu + (0.5 * sd))))
     print('I(mu + 1SD) = %.3f' % information_of_x(X.pdf(mu + (1 * sd))))
+    print('I(mu + 1.5SD) = %.3f' % information_of_x(X.pdf(mu + (1.5 * sd))))
     print('I(mu + 2SD) = %.3f' % information_of_x(X.pdf(mu + (2 * sd))))
     print('I(mu - 0.3SD) = %.3f' % information_of_x(X.pdf(mu - (0.3 * sd))))
     print('I(mu - 0.5SD) = %.3f' % information_of_x(X.pdf(mu - (0.5 * sd))))
     print('I(mu - 1SD) = %.3f' % information_of_x(X.pdf(mu - (1 * sd))))
 
+    # array to store bpm, hrv, p_hrv, root, and i_x values
+    csv_columns = ['bpm','rmssd','cdf(rmssd)', 'root', 'I(rmssd)']
+    dict_arr = []
+
     # send to ChucK at 10 second intervals
     print('\nsending measures for segmented (10 seconds) data')
-    root = 0
+    root = 0 # initialize root variable outside for loop so it can be tracked over multiple iterations
     for i in range(len(MEASURES['bpm'])):
+        bpm = MEASURES['bpm'][i]
+        hrv = MEASURES['rmssd'][i]
+        p_hrv = X.cdf(MEASURES['rmssd'][i])
         root = calRoot(MEASURES['rmssd'][i], root)
-        print(MEASURES['bpm'][i], MEASURES['rmssd'][i], X.cdf(MEASURES['rmssd'][i]), root, information_of_x(X.pdf(MEASURES['rmssd'][i])))
-        osc.msg_send(MEASURES['bpm'][i], MEASURES['rmssd'][i], X.cdf(MEASURES['rmssd'][i]), root, information_of_x(X.pdf(MEASURES['rmssd'][i])))
-        time.sleep(10)
+        i_x = information_of_x(X.pdf(MEASURES['rmssd'][i]))
+
+        # check that values are legal (non NaN) and send to OSC client
+        if(math.isnan(bpm) == False and math.isnan(hrv) == False and math.isnan(p_hrv) == False and math.isnan(i_x) == False):
+            # round values to three decimal places (except root)
+            bpm = round(bpm, 3)
+            hrv = round(hrv, 3)
+            p_hrv = round(p_hrv, 3)
+            i_x = round(i_x, 3)
+
+            # send values
+            osc.msg_send(bpm, hrv, p_hrv, root, i_x, 0)
+
+            # store values in array to exported as csv file later
+            new_dict = {csv_columns[0] : bpm, csv_columns[1] : hrv, csv_columns[2] : p_hrv, csv_columns[3] : root, csv_columns[4] : i_x}
+            dict_arr.append(new_dict)
+
+            time.sleep(10)
+
+    
+    # send '1' as status to signal end
+    osc.msg_send(60, mu, 0.5, 0, 6, 1)
+
+    # export data arrays
+    csv_file = "nsr-MLII.csv"
+    try:
+        with open(csv_file, 'w') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+            writer.writeheader()
+            for data in dict_arr:
+                writer.writerow(data)
+    except IOError:
+        print("I/O error")
 
     # all done!
     print('\nexiting...')
