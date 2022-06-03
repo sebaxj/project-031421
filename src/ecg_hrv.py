@@ -6,7 +6,6 @@ import math
 from scipy import stats
 import numpy as np
 import csv
-import os
 
 # import OSC client
 import osc_client as osc

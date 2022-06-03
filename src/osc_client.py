@@ -1,7 +1,6 @@
 # import packages
 import argparse
 from pythonosc import udp_client
-import math
 
 def msg_send(bpm, hrv, p_hrv, root, entropy, status):
     """send OSC message to client 

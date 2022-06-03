@@ -135,4 +135,4 @@ STOP
 
 ## TODO:
 
-1. Write final writeup.
+1. Embed Python in C++ program.
