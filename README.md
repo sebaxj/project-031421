@@ -1,3 +1,6 @@
+***NOTE: TO SEE THE MOST CURRENT VERSION OF THIS DOCUMENT, 
+[CLICK HERE](./docs/FINAL-REPORT.pdf)***  
+  
 # Electrocardiogram Sonification: Senior Capstone Project
 
 _author: Sebastian James_  
@@ -6,9 +9,9 @@ _06/02/2022_
 ## I. OVERVIEW
 
 This report details the completion of my senior capstone project as described
-in [SDD v1.0a](https://ccrma.stanford.edu/~sebaxj/capstone_assets/SDD_v1.0a.pdf).
+in [SDD v1.0a](./docs/assets/SDD_v1.0a.pdf).
 
-## II. PROGRESS SINCE [WINTER 2022 QUARTER REPORT](https://ccrma.stanford.edu/~sebaxj/capstone_assets/WIN2022-REPORT.pdf)
+## II. PROGRESS SINCE [WINTER 2022 QUARTER REPORT](./docs/assets/WIN2022-REPORT.pdf)
 
 **_Preamble from a note made after Winter 2022 Quarter Report:_**  
 This project has reached a crossroads. Initially, I had proposed using
