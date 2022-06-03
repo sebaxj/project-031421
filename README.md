@@ -298,7 +298,7 @@ Little-to-no polyphony and more subdominant and predominant chords as well as de
 tend to fluctuate out of the C4 octave.
 
 ![raw ECG waveform for MI](./docs/analysis/MI_ANALYSIS/mi-raw.png)  
-![annotated ECG waveform for MI](./docsanalysis/MI_ANALYSIS/mi-annotated.png)  
+![annotated ECG waveform for MI](./docs/analysis/MI_ANALYSIS/mi-annotated.png)  
 [Listen Here](https://ccrma.stanford.edu/~sebaxj/capstone_assets/myocardial-ischemia-st.wav)
 
 ## V. LOOKING INTO THE FUTURE
