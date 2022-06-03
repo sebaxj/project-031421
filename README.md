@@ -1,6 +1,6 @@
-***NOTE: TO SEE THE MOST CURRENT VERSION OF THIS DOCUMENT, 
-[CLICK HERE](./docs/FINAL-REPORT.pdf)***  
-  
+**_NOTE: TO SEE THE MOST CURRENT VERSION OF THIS DOCUMENT,
+[CLICK HERE](./docs/FINAL-REPORT.pdf)_**
+
 # Electrocardiogram Sonification: Senior Capstone Project
 
 _author: Sebastian James_  
@@ -94,7 +94,7 @@ electrocardiographic recordings. As such, I used a 10 second window as a process
 Nussinovitch et al. found that the mean HRV over a 10 second window was $\mu = 38.70$ ms with a standard deviation of $SD = 33.27$ ms.
 These values were used to approximate a normal distribution such that the probability of each observed HRV value could be calculated.
 
-![image of the RR interval](assets/peakdetection_rmssd.png)
+![image of the RR interval](./docs/assets/peakdetection_rmssd.png)
 
 Lastly, the `Python` program calculated the [information content](<https://en.wikipedia.org/wiki/Entropy_(information_theory)>) of
 each observed HRV value to apply a metric of how _surprising_ the resulting sonification should be. This value was calculated relative
@@ -265,8 +265,8 @@ chord patterns should consist mostly of tonic and dominant sequences with decept
 when the HRV dropped suddenly. Additionally, the texture should be dense and polyphonic with notes
 coming from the C5 octave predominantly.
 
-![raw ECG waveform for NSR](analysis/NSR_ANALYSIS/nsr-raw.png)  
-![annotated ECG waveform for NSR](analysis/NSR_ANALYSIS/nsr-annotated.png)  
+![raw ECG waveform for NSR](./docs/analysis/NSR_ANALYSIS/nsr-raw.png)  
+![annotated ECG waveform for NSR](./docs/analysis/NSR_ANALYSIS/nsr-annotated.png)  
 [Listen Here](https://ccrma.stanford.edu/~sebaxj/capstone_assets/nsr-MLII.wav)
 
 ### ii. Atrial Fibrillation (AFIB)
@@ -284,8 +284,8 @@ and a faster average length of each note played which can be explained by the ex
 because each measure was irregular, the information content for observed HRV measures yielded a high amount of
 surprise (entropy) and thus the sonification contained large amounts of polyphony.
 
-![raw ECG waveform for AFIB](analysis/AFIB_ANALYSIS/afib-raw.png)  
-![annotated ECG waveform for AFIB](analysis/AFIB_ANALYSIS/afib-annotated.png)  
+![raw ECG waveform for AFIB](./docs/analysis/AFIB_ANALYSIS/afib-raw.png)  
+![annotated ECG waveform for AFIB](./docs/analysis/AFIB_ANALYSIS/afib-annotated.png)  
 [Listen Here](https://ccrma.stanford.edu/~sebaxj/capstone_assets/afib-MLII.wav)
 
 ### iii. Myocardial Ischemia (MI)
@@ -297,8 +297,8 @@ R-peak distance and therefore the sonification presents much like NSR, but with 
 Little-to-no polyphony and more subdominant and predominant chords as well as deceptive cadences can be heard. The HR didn't
 tend to fluctuate out of the C4 octave.
 
-![raw ECG waveform for MI](analysis/MI_ANALYSIS/mi-raw.png)  
-![annotated ECG waveform for MI](analysis/MI_ANALYSIS/mi-annotated.png)  
+![raw ECG waveform for MI](./docs/analysis/MI_ANALYSIS/mi-raw.png)  
+![annotated ECG waveform for MI](./docsanalysis/MI_ANALYSIS/mi-annotated.png)  
 [Listen Here](https://ccrma.stanford.edu/~sebaxj/capstone_assets/myocardial-ischemia-st.wav)
 
 ## V. LOOKING INTO THE FUTURE
