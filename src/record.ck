@@ -6,7 +6,7 @@
 dac => WvOut2 w => blackhole;
 
 // this is the output file name
-"nsr-MLII" => w.wavFilename;
+"afib-MLII" => w.wavFilename;
 
 // print it out
 <<<"writing to file: ", w.filename()>>>;

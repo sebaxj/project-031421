@@ -1,3 +1,13 @@
+"""
+    This file contains the OSC client for ECG data processing 
+    and analysis pipeline done in ecg_hrv.py
+
+    author: Sebastian James (sebaxj@stanford.edu)
+    date: 6/3/2022
+    
+    Senior Capstone Project
+    B.A. Music
+"""
 # import packages
 import argparse
 from pythonosc import udp_client

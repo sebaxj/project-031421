@@ -1,3 +1,15 @@
+"""
+    This file contains the ECG data processing and analysis pipeline 
+    for algorithmic biosignal composition. 
+
+    See main() for more details.
+
+    author: Sebastian James (sebaxj@stanford.edu)
+    date: 6/3/2022
+    
+    Senior Capstone Project
+    B.A. Music
+"""
 # import packages
 import heartpy as hp 
 import matplotlib.pyplot as plt
@@ -98,6 +110,7 @@ def plotECG(data, title, peaklist=None, ybeat=None, bpm=None, show=False):
     # if no peak list or ybeat are specified, plot the raw signal only
     if (peaklist == None) or (ybeat == None):
         plt.figure()
+        plt.title(title)
         plt.plot(data)
 
         # OPTIONAL: show plot
@@ -317,13 +330,12 @@ def main():
     print('\n--- hrv_ecg.py main() ---')
 
     # read data from csv file
-    # data = readECG('data/e0103.csv') # sample rate = 250
-    # data = readECG('data/e0110.csv') # sample rate = 250
-    # data = readECG('data/e0124.csv') # sample rate = 250
-    # data = readECG('data/afib.csv') # sample rate = 360
-    data = readECG('data/nsr.csv') # sample rate = 360
+    # see data/README.md for more information
+    filename = 'nsr.csv'
+    data = readECG('data/' + filename)
 
     # set sample rate 
+    # see data/README.md for more information
     data_sample_rate = 360
 
     # view raw data
@@ -338,7 +350,7 @@ def main():
     WORKING_DATA, MEASURES = processAll(data, data_sample_rate)
 
     # plot data
-    plotECG(data, 'Raw ECG', WORKING_DATA['peaklist'], WORKING_DATA['ybeat'], MEASURES['bpm'], show=True)
+    plotECG(data, 'Annotated ECG', WORKING_DATA['peaklist'], WORKING_DATA['ybeat'], MEASURES['bpm'], show=True)
 
     # calculate HR over 10 second segments
     # MEASURES['RMSDD'] contains the root mean of successive differences between normal heartbeats
@@ -353,15 +365,13 @@ def main():
     sd = 33.27
     X = stats.norm(mu, sd)
 
+    # print out information content of arbitrary HRV values
     print('I(mean of HRV) = %.3f' % information_of_x(X.pdf(mu)))
-    print('I(mu + 0.3SD) = %.3f' % information_of_x(X.pdf(mu + (0.3 * sd))))
-    print('I(mu + 0.5SD) = %.3f' % information_of_x(X.pdf(mu + (0.5 * sd))))
-    print('I(mu + 1SD) = %.3f' % information_of_x(X.pdf(mu + (1 * sd))))
-    print('I(mu + 1.5SD) = %.3f' % information_of_x(X.pdf(mu + (1.5 * sd))))
-    print('I(mu + 2SD) = %.3f' % information_of_x(X.pdf(mu + (2 * sd))))
-    print('I(mu - 0.3SD) = %.3f' % information_of_x(X.pdf(mu - (0.3 * sd))))
-    print('I(mu - 0.5SD) = %.3f' % information_of_x(X.pdf(mu - (0.5 * sd))))
-    print('I(mu - 1SD) = %.3f' % information_of_x(X.pdf(mu - (1 * sd))))
+    print('I(mu +/- 0.3SD) = %.3f' % information_of_x(X.pdf(mu + (0.3 * sd))))
+    print('I(mu +/- 0.5SD) = %.3f' % information_of_x(X.pdf(mu + (0.5 * sd))))
+    print('I(mu +/- 1SD) = %.3f' % information_of_x(X.pdf(mu + (1 * sd))))
+    print('I(mu +/- 1.5SD) = %.3f' % information_of_x(X.pdf(mu + (1.5 * sd))))
+    print('I(mu +/- 2SD) = %.3f' % information_of_x(X.pdf(mu + (2 * sd))))
 
     # array to store bpm, hrv, p_hrv, root, and i_x values
     csv_columns = ['bpm','rmssd','cdf(rmssd)', 'root', 'I(rmssd)']
@@ -399,7 +409,7 @@ def main():
     osc.msg_send(60, mu, 0.5, 0, 6, 1)
 
     # export data arrays
-    csv_file = "nsr-MLII.csv"
+    csv_file = 'COMPUTED-MEASURES-' + filename
     try:
         with open(csv_file, 'w') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=csv_columns)

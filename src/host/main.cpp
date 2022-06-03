@@ -2,7 +2,7 @@
 // name: main.cpp
 // desc: Capstone Project: Biosignal Analysis
 //
-// author:
+// author: Sebastian James (sebaxj@stanford.edu)
 //   date: Spring 2022
 //   uses: RtAudio by Gary Scavone
 //   thanks to: Ge Wang (ge@ccrma.stanford.edu), Chris Chafe, Takako Fujioka

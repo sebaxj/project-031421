@@ -1,10 +1,7 @@
-docs/ChucK_manual.pdf
 *.swp
-jythonMusic/*
-src/.ccls
-src/.ccls-cache/*
-src/compile_commands.json
-.ccls-cache/*
+.ccls
+.ccls-cache/
+compile_commands.json
 .DS_Store
 .vscode/
 *.o
@@ -15,6 +12,6 @@ src/core/chuck.tab.h
 src/core/chuck.yy.c
 src/main
 __pycache__
-analysis/
 src/data/european-st-t-database-1.0.0/
 src/data/MLII/
+*.wav

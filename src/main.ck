@@ -1,6 +1,12 @@
 //----------------------------------------------------------------------------
-// name: osc_server.ck
-// desc: OpenSoundControl (OSC) receiver example
+// name: main.ck
+// desc: ECG sonification algorithm and OSC server
+//
+// author: Sebastian James (sebaxj@stanford.edu)
+// date: 6/3/2022
+// 
+// Senior Capstone Project
+// B.A. Music
 //----------------------------------------------------------------------------
 
 // create our OSC receiver
