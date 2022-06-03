@@ -6,9 +6,9 @@ _06/02/2022_
 ## I. OVERVIEW
 
 This report details the completion of my senior capstone project as described
-in [SDD v1.0a](./assets/SDD_v1.0a.pdf).
+in [SDD v1.0a](https://ccrma.stanford.edu/~sebaxj/capstone_assets/SDD_v1.0a.pdf).
 
-## II. PROGRESS SINCE WINTER 2022 QUARTER REPORT
+## II. PROGRESS SINCE [WINTER 2022 QUARTER REPORT](https://ccrma.stanford.edu/~sebaxj/capstone_assets/WIN2022-REPORT.pdf)
 
 **_Preamble from a note made after Winter 2022 Quarter Report:_**  
 This project has reached a crossroads. Initially, I had proposed using
@@ -21,7 +21,7 @@ and the ease of ECG processing, analysis, and annotation in `Python`,
 this project will now need to move to a repository based off `Python`.
 After sufficient development in `Python`, it will be possible to export
 the sonification algorithm to `C++`, but `Python` will used for initial development.
-In [Winter 2022 Quarter Report](./assets/WIN2022-REPORT.pdf) I detailed a plan to
+In Winter 2022 Quarter Report I detailed a plan to
 transition from the amplitude analysis program written to an algorithm incorporating heart rate variability (HRV), live data
 acquisition, pulse oximetrey, and blood pressure readings. However, after
 spending sufficient time on ECG HRV analysis, I decided to approach this project
@@ -30,7 +30,7 @@ In addition to analyzing raw ECG data to calculate HRV and heart rate (HR), I wi
 statistics to add additional measures of heart health. Using information theory
 and Shannon Entropy, I will calculate the information content of an observed HRV value
 relative to a mean to measure how _surprising_ observed HRV values are.
-Since the milestones summarized in [Winter 2022 Quarter Report](./assets/WIN2022-REPORT.pdf),
+Since the milestones summarized in Winter 2022 Quarter Report,
 I have accomplished the following:
 
 1. Development of ECG processing and analysis software using `Python`.
@@ -253,7 +253,7 @@ In this report I have included my sonification of three types of heart rhythms. 
 also included a baseline recording where roots, density, chords, octaves, and polyphony are generated from
 random chance so as to have a control to compare the ECG data against.  
   
-[Listen Here](https://ccrma.stanford.edu/~sebaxj/capstone_wav_files/baseline.wav)
+[Listen Here](https://ccrma.stanford.edu/~sebaxj/capstone_assets/baseline.wav)
 
 ### i. Normal Sinus Rhythm (NSR)
 
@@ -264,7 +264,7 @@ coming from the C5 octave predominantly.
 
 ![raw ECG waveform for NSR](./analysis/NSR_ANALYSIS/nsr-raw.png)  
 ![annotated ECG waveform for NSR](./analysis/NSR_ANALYSIS/nsr-annotated.png)  
-[Listen Here](https://ccrma.stanford.edu/~sebaxj/capstone_wav_files/nsr-MLII.wav)
+[Listen Here](https://ccrma.stanford.edu/~sebaxj/capstone_assets/nsr-MLII.wav)
 
 ### ii. Atrial Fibrillation (AFIB)
 
@@ -283,7 +283,7 @@ surprise (entropy) and thus the sonification contained large amounts of polyphon
 
 ![raw ECG waveform for AFIB](./analysis/AFIB_ANALYSIS/afib-raw.png)  
 ![annotated ECG waveform for AFIB](./analysis/AFIB_ANALYSIS/afib-annotated.png)  
-[Listen Here](https://ccrma.stanford.edu/~sebaxj/capstone_wav_files/afib-MLII.wav)
+[Listen Here](https://ccrma.stanford.edu/~sebaxj/capstone_assets/afib-MLII.wav)
 
 ### iii. Myocardial Ischemia (MI)
 
@@ -296,7 +296,7 @@ tend to fluctuate out of the C4 octave.
 
 ![raw ECG waveform for MI](./analysis/MI_ANALYSIS/mi-raw.png)  
 ![annotated ECG waveform for MI](./analysis/MI_ANALYSIS/mi-annotated.png)  
-[Listen Here](https://ccrma.stanford.edu/~sebaxj/capstone_wav_files/myocardial-ischemia-st.wav)
+[Listen Here](https://ccrma.stanford.edu/~sebaxj/capstone_assets/myocardial-ischemia-st.wav)
 
 ## V. LOOKING INTO THE FUTURE
 
