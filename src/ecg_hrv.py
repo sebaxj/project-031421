@@ -29,7 +29,7 @@ import osc_client as osc
 SCALE_DEGREE = [0, 2, 4, 6, 7, 9, 11]
 SCALE_DEGREE_m = [0, 2, 3, 6, 7, 9, 11]
 
-# arrays of root note PDF's 
+# arrays of root note PMF's 
 # I
 I1 = [0.00, 0.00, 0.02, 0.00, 0.08, 0.10, 0.80]
 I2 = [0.10, 0.10, 0.05, 0.05, 0.30, 0.10, 0.30]
