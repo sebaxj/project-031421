@@ -95,7 +95,7 @@ These values were used to approximate a normal distribution such that the probab
 
 Lastly, the `Python` program calculated the [information content](<https://en.wikipedia.org/wiki/Entropy_(information_theory)>) of
 each observed HRV value to apply a metric of how _surprising_ the resulting sonification should be. This value was calculated relative
-to the PMF of the observed HRV value in respect to a normal distribution with mean $\mu$ and standard deviation $SD$. The equation for
+to the PDF of the observed HRV value in respect to a normal distribution with mean $\mu$ and standard deviation $SD$. The equation for
 the information content or _surprisal_ of an event $E$ is a function which increases as the probability $p(E)$ of an event decreases. It
 is calculated with the following equation
 
@@ -135,7 +135,7 @@ Python:
 START
 1. Calculate the RMSDD and HR of heart data in 10 second segments.
 2. For each segment:
-	3. Calculate the shannon entropy using the PMF of the observed
+	3. Calculate the shannon entropy using the PDF of the observed
 	HRV (mu = 38.7, SD = 33.27) and apply that value to the
 	probability that a chord is played.
 	4. Calculate the CDF of observed HRV (mu = 38.7, SD = 33.27)
